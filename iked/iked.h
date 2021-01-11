@@ -26,6 +26,8 @@
 
 #include <openssl/evp.h>
 
+#include "openbsd-compat.h"
+
 #include "types.h"
 #include "dh.h"
 
