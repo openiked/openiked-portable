@@ -655,7 +655,7 @@ sa_address(struct iked_sa *sa, struct iked_addr *addr, struct sockaddr *peer)
 	bzero(addr, sizeof(*addr));
 	addr->addr_af = peer->sa_family;
 	addr->addr_port = htons(socket_getport(peer));
-	memcpy(&addr->addr, peer, peer->sa_len);
+	memcpy(&addr->addr, peer, SA_LEN(peer));
 	if (socket_af((struct sockaddr *)&addr->addr, addr->addr_port) == -1) {
 		log_debug("%s: invalid address", __func__);
 		return (-1);

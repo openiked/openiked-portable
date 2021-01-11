@@ -727,8 +727,8 @@ ikev2_msg_send_encrypt(struct iked *env, struct iked_sa *sa, struct ibuf **ep,
 	}
 
 	if ((buf = ikev2_msg_init(env, &resp, &sa->sa_peer.addr,
-	    sa->sa_peer.addr.ss_len, &sa->sa_local.addr,
-	    sa->sa_local.addr.ss_len, response)) == NULL)
+	    SS_LEN(sa->sa_peer.addr), &sa->sa_local.addr,
+	    SS_LEN(sa->sa_local.addr), response)) == NULL)
 		goto done;
 
 	resp.msg_msgid = response ? sa->sa_msgid_current : ikev2_msg_id(env, sa);
@@ -817,8 +817,8 @@ ikev2_send_encrypted_fragments(struct iked *env, struct iked_sa *sa,
 
 	while (frag_num <= frag_total) {
 		if ((buf = ikev2_msg_init(env, &resp, &sa->sa_peer.addr,
-		    sa->sa_peer.addr.ss_len, &sa->sa_local.addr,
-		    sa->sa_local.addr.ss_len, response)) == NULL)
+		    SS_LEN(sa->sa_peer.addr), &sa->sa_local.addr,
+		    SS_LEN(sa->sa_local.addr), response)) == NULL)
 			goto done;
 
 		resp.msg_msgid = msgid;

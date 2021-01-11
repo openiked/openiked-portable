@@ -1249,10 +1249,10 @@ ikev2_init_ike_sa_peer(struct iked *env, struct iked_policy *pol,
 		if (socket_getaddr(sock->sock_fd, &ss) == -1)
 			goto closeonly;
 	} else
-		memcpy(&ss, &pol->pol_local.addr, pol->pol_local.addr.ss_len);
+		memcpy(&ss, &pol->pol_local.addr, SS_LEN(pol->pol_local.addr));
 
-	if ((buf = ikev2_msg_init(env, &req, &peer->addr, peer->addr.ss_len,
-	    &ss, ss.ss_len, 0)) == NULL)
+	if ((buf = ikev2_msg_init(env, &req, &peer->addr, SS_LEN(peer->addr),
+	    &ss, SS_LEN(ss), 0)) == NULL)
 		goto done;
 
 	/* Inherit the port from the 1st send socket */
@@ -4846,8 +4846,8 @@ ikev2_ike_sa_keepalive(struct iked *env, void *arg)
 	uint8_t				 marker = 0xff;
 
 	if (sendtofrom(sa->sa_fd, &marker, sizeof(marker), 0,
-	    (struct sockaddr *)&sa->sa_peer.addr, sa->sa_peer.addr.ss_len,
-	    (struct sockaddr *)&sa->sa_local.addr, sa->sa_local.addr.ss_len)
+	    (struct sockaddr *)&sa->sa_peer.addr, SS_LEN(sa->sa_peer.addr),
+	    (struct sockaddr *)&sa->sa_local.addr, SS_LEN(sa->sa_local.addr))
 	    == -1)
 		log_warn("%s: sendtofrom: peer %s local %s", __func__,
 		    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0),
@@ -6511,7 +6511,9 @@ ikev2_print_id(struct iked_id *id, char *idstr, size_t idstrlen)
 	case IKEV2_ID_IPV4:
 		s4 = (struct sockaddr_in *)buf;
 		s4->sin_family = AF_INET;
+#ifdef HAVE_SOCKADDR_SA_LEN
 		s4->sin_len = sizeof(*s4);
+#endif
 		memcpy(&s4->sin_addr.s_addr, ptr, len);
 
 		if (print_host((struct sockaddr *)s4,
@@ -6535,7 +6537,9 @@ ikev2_print_id(struct iked_id *id, char *idstr, size_t idstrlen)
 	case IKEV2_ID_IPV6:
 		s6 = (struct sockaddr_in6 *)buf;
 		s6->sin6_family = AF_INET6;
+#ifdef HAVE_SOCKADDR_SA_LEN
 		s6->sin6_len = sizeof(*s6);
+#endif
 		memcpy(&s6->sin6_addr, ptr, len);
 
 		if (print_host((struct sockaddr *)s6,
@@ -6736,7 +6740,9 @@ ikev2_cp_setaddr_pool(struct iked *env, struct iked_sa *sa,
 		}
 		in4 = (struct sockaddr_in *)&addr.addr;
 		in4->sin_family = AF_INET;
+#ifdef HAVE_SOCKADDR_SA_LEN
 		in4->sin_len = sizeof(*in4);
+#endif
 		lower = ntohl(cfg4->sin_addr.s_addr & ~mask);
 		key.sa_addrpool = &addr;
 		break;
@@ -6747,7 +6753,9 @@ ikev2_cp_setaddr_pool(struct iked *env, struct iked_sa *sa,
 			/* XXX not yet supported */
 		}
 		in6->sin6_family = AF_INET6;
+#ifdef HAVE_SOCKADDR_SA_LEN
 		in6->sin6_len = sizeof(*in6);
+#endif
 		/* truncate prefixlen to get a 32-bit space */
 		mask = (ikecfg->cfg.address.addr_mask >= 96)
 		    ? prefixlen2mask(ikecfg->cfg.address.addr_mask - 96)
@@ -6968,15 +6976,15 @@ ikev2_update_sa_addresses(struct iked *env, struct iked_sa *sa)
 	/* update pending requests and responses */
 	TAILQ_FOREACH(msg, &sa->sa_requests, msg_entry) {
 		msg->msg_local = sa->sa_local.addr;
-		msg->msg_locallen = sa->sa_local.addr.ss_len;
+		msg->msg_locallen = SS_LEN(sa->sa_local.addr);
 		msg->msg_peer = sa->sa_peer.addr;
-		msg->msg_peerlen = sa->sa_peer.addr.ss_len;
+		msg->msg_peerlen = SS_LEN(sa->sa_peer.addr);
 	}
 	TAILQ_FOREACH(msg, &sa->sa_responses, msg_entry) {
 		msg->msg_local = sa->sa_local.addr;
-		msg->msg_locallen = sa->sa_local.addr.ss_len;
+		msg->msg_locallen = SS_LEN(sa->sa_local.addr);
 		msg->msg_peer = sa->sa_peer.addr;
-		msg->msg_peerlen = sa->sa_peer.addr.ss_len;
+		msg->msg_peerlen = SS_LEN(sa->sa_peer.addr);
 	}
 
 	/* Update sa_peer_loaded, to match in-kernel information */

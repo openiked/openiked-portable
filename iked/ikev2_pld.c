@@ -1530,7 +1530,9 @@ ikev2_pld_ts(struct iked *env, struct ikev2_payload *pld,
 
 		bzero(&s4, sizeof(s4));
 		s4.sin_family = AF_INET;
+#ifdef HAVE_SOCKADDR_SA_LEN
 		s4.sin_len = sizeof(s4);
+#endif
 		memcpy(&s4.sin_addr.s_addr, ptr, 4);
 		ptr += 4;
 		left -= 4;
@@ -1554,7 +1556,9 @@ ikev2_pld_ts(struct iked *env, struct ikev2_payload *pld,
 		}
 		bzero(&s6, sizeof(s6));
 		s6.sin6_family = AF_INET6;
+#ifdef HAVE_SOCKADDR_SA_LEN
 		s6.sin6_len = sizeof(s6);
+#endif
 		memcpy(&s6.sin6_addr, ptr, 16);
 		ptr += 16;
 		left -= 16;
@@ -1896,7 +1900,9 @@ ikev2_pld_cp(struct iked *env, struct ikev2_payload *pld,
 			addr->addr_af = AF_INET;
 			in4 = (struct sockaddr_in *)&addr->addr;
 			in4->sin_family = AF_INET;
+#ifdef HAVE_SOCKADDR_SA_LEN
 			in4->sin_len = sizeof(*in4);
+#endif
 			memcpy(&in4->sin_addr.s_addr, ptr, 4);
 			print_host((struct sockaddr *)in4, (char *)buf,
 			    sizeof(buf));
@@ -1926,7 +1932,9 @@ ikev2_pld_cp(struct iked *env, struct ikev2_payload *pld,
 			addr->addr_af = AF_INET6;
 			in6 = (struct sockaddr_in6 *)&addr->addr;
 			in6->sin6_family = AF_INET6;
+#ifdef HAVE_SOCKADDR_SA_LEN
 			in6->sin6_len = sizeof(*in6);
+#endif
 			memcpy(&in6->sin6_addr, ptr, 16);
 			print_host((struct sockaddr *)in6, (char *)buf,
 			    sizeof(buf));
