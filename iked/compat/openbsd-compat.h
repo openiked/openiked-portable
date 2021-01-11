@@ -171,6 +171,42 @@ int ffs(int);
 typedef int evutil_socket_t;
 #endif
 
+#ifndef _PASSWORD_LEN
+#define _PASSWORD_LEN	120
+#endif
+
+#ifdef HAVE_DIRENT_H
+# include <dirent.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+# define dirent direct
+# define NAMLEN(dirent) (dirent)->d_namlen
+# ifdef HAVE_SYS_NDIR_H
+#  include <sys/ndir.h>
+# endif
+# ifdef HAVE_SYS_DIR_H
+#  include <sys/dir.h>
+# endif
+# ifdef HAVE_NDIR_H
+#  include <ndir.h>
+# endif
+#endif
+
+#if !defined(AF_LINK) && defined(AF_PACKET)
+#define AF_LINK AF_PACKET	/* XXX workaround on Linux */
+#endif
+
+#ifndef HOST_NAME_MAX
+# include "netdb.h" /* for MAXHOSTNAMELEN */
+# if defined(_POSIX_HOST_NAME_MAX)
+#  define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+# elif defined(MAXHOSTNAMELEN)
+#  define HOST_NAME_MAX MAXHOSTNAMELEN
+# else
+#  define HOST_NAME_MAX 255
+# endif
+#endif /* HOST_NAME_MAX */
+
 #if !defined(__packed)
 #define __packed	__attribute__((__packed__))
 #endif

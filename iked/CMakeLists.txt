@@ -44,7 +44,6 @@ if(HAVE_UNISTD_H)
 	add_definitions(-DHAVE_UNISTD_H)
 endif()
 
-
 check_include_files("sys/types.h;sys/queue.h;imsg.h" HAVE_IMSG_H)
 if(HAVE_IMSG_H)
 	add_definitions(-DHAVE_IMSG_H)
@@ -321,6 +320,12 @@ if(NOT HAVE_ARC4RANDOM_UNIFORM)
 	list(APPEND SRCS ${IKED_COMPAT}/arc4random_uniform.c)
 endif()
 
+if(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
+	list(APPEND SRCS ipsec.c pfkey.c)
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+	list(APPEND SRCS ipsec-linux.c)
+endif()
+
 list(APPEND SRCS
 	ca.c
 	chap_ms.c
@@ -337,7 +342,6 @@ list(APPEND SRCS
 	imsg_util.c
 	log.c
 	ocsp.c
-	pfkey.c
 	policy.c
 	proc.c
 	smult_curve25519_ref.c
