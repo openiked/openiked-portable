@@ -105,6 +105,7 @@ socket_getaddr(int s, struct sockaddr_storage *ss)
 int
 socket_bypass(int s, struct sockaddr *sa)
 {
+#ifdef IPSEC_LEVEL_BYPASS
 	int	 v, *a;
 	int	 a4[] = {
 		    IPPROTO_IP,
@@ -157,6 +158,7 @@ socket_bypass(int s, struct sockaddr *sa)
 	}
 #endif
 
+#endif /* IPSEC_LEVEL_BYPASS */
 	return (0);
 }
 
