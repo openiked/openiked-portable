@@ -2206,7 +2206,9 @@ int
 ifa_exists(const char *ifa_name)
 {
 	struct ipsec_addr_wrap	*n;
+#if 0
 	struct ifgroupreq	 ifgr;
+#endif
 	int			 s;
 
 	if (iftab == NULL)
@@ -2215,12 +2217,14 @@ ifa_exists(const char *ifa_name)
 	/* check wether this is a group */
 	if ((s = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
 		err(1, "ifa_exists: socket");
+#if 0
 	bzero(&ifgr, sizeof(ifgr));
 	strlcpy(ifgr.ifgr_name, ifa_name, sizeof(ifgr.ifgr_name));
 	if (ioctl(s, SIOCGIFGMEMB, (caddr_t)&ifgr) == 0) {
 		close(s);
 		return (1);
 	}
+#endif
 	close(s);
 
 	for (n = iftab; n; n = n->next) {
@@ -2232,6 +2236,7 @@ ifa_exists(const char *ifa_name)
 	return (0);
 }
 
+#if 0
 struct ipsec_addr_wrap *
 ifa_grouplookup(const char *ifa_name)
 {
@@ -2275,6 +2280,7 @@ ifa_grouplookup(const char *ifa_name)
 
 	return (h);
 }
+#endif
 
 struct ipsec_addr_wrap *
 ifa_lookup(const char *ifa_name)
@@ -2286,8 +2292,10 @@ ifa_lookup(const char *ifa_name)
 	if (iftab == NULL)
 		ifa_load();
 
+#if 0
 	if ((n = ifa_grouplookup(ifa_name)) != NULL)
 		return (n);
+#endif
 
 	for (p = iftab; p; p = p->next) {
 		if (p->af != AF_INET && p->af != AF_INET6)
