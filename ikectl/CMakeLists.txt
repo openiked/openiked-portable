@@ -31,6 +31,9 @@ if(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
 	add_definitions(-DHAVE_ATTRIBUTE__DEAD__)
 	add_definitions(-DHAVE_SOCKADDR_SA_LEN)
 	add_definitions(-DHAVE_FFS)
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+	add_definitions(-D_GNU_SOURCE)
+	add_definitions(-D_DEFAULT_SOURCE)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL DEBUG)
@@ -47,6 +50,11 @@ endif()
 check_include_files(unistd.h HAVE_UNISTD_H)
 if(HAVE_UNISTD_H)
 	add_definitions(-DHAVE_UNISTD_H)
+endif()
+
+check_include_files(dirent.h HAVE_DIRENT_H)
+if(HAVE_DIRENT_H)
+	add_definitions(-DHAVE_DIRENT_H)
 endif()
 
 check_function_exists(recallocarray HAVE_RECALLOCARRAY)
@@ -339,7 +347,6 @@ list(APPEND CFLAGS
 	-Wpointer-arith
 	-Wcast-qual
 	-Wsign-compare
-	-Werror
 	"$<$<CONFIG:DEBUG>:-O0;-g>"
 )
 

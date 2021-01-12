@@ -35,6 +35,8 @@
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 
+#include "openbsd-compat.h"
+
 #include "types.h"
 #include "parser.h"
 
@@ -504,8 +506,8 @@ ca_show_certs(struct ca *ca, char *name)
 		err(1, "could not open directory %s", ca->sslpath);
 
 	while ((de = readdir(dir)) != NULL) {
-		if (de->d_namlen > 4) {
-			p = de->d_name + de->d_namlen - 4;
+		if (NAMLEN(de) > 4) {
+			p = de->d_name + NAMLEN(de) - 4;
 			if (strcmp(".crt", p) != 0)
 				continue;
 			snprintf(path, sizeof(path), "%s/%s", ca->sslpath,
@@ -536,7 +538,8 @@ fcopy(char *src, char *dst, mode_t mode)
 	if ((ofd = open(dst, O_WRONLY|O_CREAT|O_TRUNC, mode)) == -1) {
 		int saved_errno = errno;
 		close(ifd);
-		errc(1, saved_errno, "open %s", dst);
+		//errc(1, saved_errno, "open %s", dst);
+		exit(1);
 	}
 
 	while ((r = read(ifd, buf, sizeof(buf))) > 0) {
@@ -585,7 +588,8 @@ fcopy_env(const char *src, const char *dst, mode_t mode)
 	if (ifp != NULL)
 		fclose(ifp);
 	if (r == -1)
-		errc(1, saved_errno, "open %s", dst);
+		//errc(1, saved_errno, "open %s", dst);
+		exit(1);
 }
 
 int
