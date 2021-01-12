@@ -38,6 +38,8 @@
  * Common IKEv1/IKEv2 header
  */
 
+extern enum privsep_procid privsep_process;
+
 struct ike_header {
 	uint64_t	 ike_ispi;		/* Initiator cookie */
 	uint64_t	 ike_rspi;		/* Responder cookie */
@@ -101,7 +103,7 @@ struct ctl_conn {
 TAILQ_HEAD(ctl_connlist, ctl_conn);
 extern  struct ctl_connlist ctl_conns;
 
-enum privsep_procid privsep_process;
+extern enum privsep_procid privsep_process;
 
 /*
  * Runtime structures
