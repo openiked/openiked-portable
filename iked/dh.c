@@ -394,17 +394,26 @@ dh_create_shared(struct group *group, struct ibuf **secretp, struct ibuf *exchan
 int
 modp_init(struct group *group)
 {
+	BIGNUM	*g = NULL, *p = NULL;
 	DH	*dh;
+	int	 ret = -1;
 
 	if ((dh = DH_new()) == NULL)
 		return (-1);
+
+	if (!BN_hex2bn(&p, group->spec->prime) ||
+	    !BN_hex2bn(&g, group->spec->generator))
+		goto done;
+
+	DH_set0_pqg(dh, p, NULL, g);
 	group->dh = dh;
 
-	if (!BN_hex2bn(&dh->p, group->spec->prime) ||
-	    !BN_hex2bn(&dh->g, group->spec->generator))
-		return (-1);
+	ret = 0;
+ done:
+	BN_clear_free(g);
+	BN_clear_free(p);
 
-	return (0);
+	return (ret);
 }
 
 int
@@ -418,12 +427,14 @@ modp_getlen(struct group *group)
 int
 modp_create_exchange(struct group *group, uint8_t *buf)
 {
-	DH	*dh = group->dh;
-	int	 len, ret;
+	const BIGNUM	*pub;
+	DH		*dh = group->dh;
+	int		 len, ret;
 
 	if (!DH_generate_key(dh))
 		return (-1);
-	ret = BN_bn2bin(dh->pub_key, buf);
+	DH_get0_key(group->dh, &pub, NULL);
+	ret = BN_bn2bin(pub, buf);
 	if (!ret)
 		return (-1);
 
