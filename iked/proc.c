@@ -34,6 +34,8 @@
 
 #include "iked.h"
 
+enum privsep_procid privsep_process;
+
 void	 proc_open(struct privsep *, struct privsep_proc *,
 	    struct privsep_proc *, size_t);
 void	 proc_close(struct privsep *);
