@@ -329,6 +329,9 @@ endif()
 if(NOT HAVE_EXPLICIT_BZERO)
 	list(APPEND SRCS ${IKED_COMPAT}/explicit_bzero.c)
 endif()
+if(NOT HAVE_REALLOCARRAY)
+	list(APPEND SRCS ${IKED_COMPAT}/reallocarray.c)
+endif()
 
 list(APPEND SRCS
 	ikeca.c
