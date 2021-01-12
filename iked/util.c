@@ -209,6 +209,7 @@ udp_bind(struct sockaddr *sa, in_port_t port)
 		}
 #endif
 	} else {
+#ifdef IPV6_RECVPKTINFO
 		val = 1;
 		if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO,
 		    &val, sizeof(int)) == -1) {
@@ -216,6 +217,7 @@ udp_bind(struct sockaddr *sa, in_port_t port)
 			    __func__);
 			goto bad;
 		}
+#endif
 	}
 
 	if (bind(s, sa, SA_LEN(sa)) == -1) {
@@ -299,11 +301,13 @@ sendtofrom(int s, void *buf, size_t len, int flags, struct sockaddr *to,
 	struct iovec		 iov;
 	struct msghdr		 msg;
 	struct cmsghdr		*cmsg;
-	struct in6_pktinfo	*pkt6;
 #ifdef IP_SENDSRCADDR
 	struct sockaddr_in	*in;
 #endif
+#ifdef IPV6_PKTINFO
+	struct in6_pktinfo	*pkt6;
 	struct sockaddr_in6	*in6;
+#endif
 	union {
 		struct cmsghdr	hdr;
 		char		inbuf[CMSG_SPACE(sizeof(struct in_addr))];
@@ -335,6 +339,7 @@ sendtofrom(int s, void *buf, size_t len, int flags, struct sockaddr *to,
 #endif
 		break;
 	case AF_INET6:
+#ifdef IPV6_PKTINFO
 		msg.msg_controllen += sizeof(cmsgbuf.in6buf);
 		cmsg->cmsg_len = CMSG_LEN(sizeof(struct in6_pktinfo));
 		cmsg->cmsg_level = IPPROTO_IPV6;
@@ -342,6 +347,7 @@ sendtofrom(int s, void *buf, size_t len, int flags, struct sockaddr *to,
 		in6 = (struct sockaddr_in6 *)from;
 		pkt6 = (struct in6_pktinfo *)CMSG_DATA(cmsg);
 		pkt6->ipi6_addr = in6->sin6_addr;
+#endif
 		break;
 	}
 
@@ -355,9 +361,13 @@ recvfromto(int s, void *buf, size_t len, int flags, struct sockaddr *from,
 	struct iovec		 iov;
 	struct msghdr		 msg;
 	struct cmsghdr		*cmsg;
-	struct in6_pktinfo	*pkt6;
+#ifdef IP_RECVDSTADDR
 	struct sockaddr_in	*in;
+#endif
+#ifdef IPV6_PKTINFO
+	struct in6_pktinfo	*pkt6;
 	struct sockaddr_in6	*in6;
+#endif
 	ssize_t			 ret;
 	union {
 		struct cmsghdr hdr;
@@ -402,6 +412,7 @@ recvfromto(int s, void *buf, size_t len, int flags, struct sockaddr *from,
 #endif
 			break;
 		case AF_INET6:
+#ifdef IPV6_PKTINFO
 			if (cmsg->cmsg_level == IPPROTO_IPV6 &&
 			    cmsg->cmsg_type == IPV6_PKTINFO) {
 				in6 = (struct sockaddr_in6 *)to;
@@ -416,6 +427,7 @@ recvfromto(int s, void *buf, size_t len, int flags, struct sockaddr *from,
 					in6->sin6_scope_id =
 					    pkt6->ipi6_ifindex;
 			}
+#endif
 			break;
 		}
 	}
