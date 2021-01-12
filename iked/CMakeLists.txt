@@ -44,6 +44,11 @@ if(HAVE_UNISTD_H)
 	add_definitions(-DHAVE_UNISTD_H)
 endif()
 
+check_include_files(dirent.h HAVE_DIRENT_H)
+if(HAVE_DIRENT_H)
+	add_definitions(-DHAVE_DIRENT_H)
+endif()
+
 check_include_files("sys/types.h;sys/queue.h;imsg.h" HAVE_IMSG_H)
 if(HAVE_IMSG_H)
 	add_definitions(-DHAVE_IMSG_H)
