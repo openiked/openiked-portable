@@ -73,23 +73,43 @@ struct pfkey_constmap {
 
 static const struct pfkey_constmap pfkey_encr[] = {
 	{ SADB_EALG_3DESCBC,	IKEV2_XFORMENCR_3DES },
+#ifdef SADB_X_EALG_CAST
 	{ SADB_X_EALG_CAST,	IKEV2_XFORMENCR_CAST },
+#endif
+#ifdef SADB_X_EALG_BLF
 	{ SADB_X_EALG_BLF,	IKEV2_XFORMENCR_BLOWFISH },
+#endif
 	{ SADB_EALG_NULL,	IKEV2_XFORMENCR_NULL },
+#ifdef SADB_X_EALG_AES
 	{ SADB_X_EALG_AES,	IKEV2_XFORMENCR_AES_CBC },
+#endif
+#ifdef SADB_X_EALG_AESCTR
 	{ SADB_X_EALG_AESCTR,	IKEV2_XFORMENCR_AES_CTR },
+#endif
+#ifdef SADB_X_EALG_AESGCM16
 	{ SADB_X_EALG_AESGCM16,	IKEV2_XFORMENCR_AES_GCM_16 },
+#endif
+#ifdef SADB_X_EALG_AESGMAC
 	{ SADB_X_EALG_AESGMAC,	IKEV2_XFORMENCR_NULL_AES_GMAC },
+#endif
+#ifdef SADB_X_EALG_CHACHA20POLY1305
 	{ SADB_X_EALG_CHACHA20POLY1305, IKEV2_XFORMENCR_CHACHA20_POLY1305 },
+#endif
 	{ 0 }
 };
 
 static const struct pfkey_constmap pfkey_integr[] = {
 	{ SADB_AALG_MD5HMAC,	IKEV2_XFORMAUTH_HMAC_MD5_96 },
 	{ SADB_AALG_SHA1HMAC,	IKEV2_XFORMAUTH_HMAC_SHA1_96 },
+#ifdef SADB_X_AALG_SHA2_256
 	{ SADB_X_AALG_SHA2_256,	IKEV2_XFORMAUTH_HMAC_SHA2_256_128 },
+#endif
+#ifdef SADB_X_AALG_SHA2_384
 	{ SADB_X_AALG_SHA2_384,	IKEV2_XFORMAUTH_HMAC_SHA2_384_192 },
+#endif
+#ifdef SADB_X_AALG_SHA2_512
 	{ SADB_X_AALG_SHA2_512,	IKEV2_XFORMAUTH_HMAC_SHA2_512_256 },
+#endif
 	{ 0 }
 };
 
@@ -596,7 +616,11 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	/* XXX handle NULL encryption or NULL auth or combined encr/auth */
 	if (action == SADB_ADD &&
 	    !ibuf_length(sa->csa_integrkey) && !ibuf_length(sa->csa_encrkey) &&
-	    satype != SADB_X_SATYPE_IPCOMP && satype != SADB_X_SATYPE_IPIP) {
+	    satype != SADB_X_SATYPE_IPCOMP
+#ifdef SADB_X_SATYPE_IPIP
+	    && satype != SADB_X_SATYPE_IPIP
+#endif
+	    ) {
 		log_warnx("%s: no key specified", __func__);
 		return (-1);
 	}

@@ -320,12 +320,12 @@ config_free_childsas(struct iked *env, struct iked_childsas *head,
 		TAILQ_REMOVE(head, csa, csa_entry);
 		if (csa->csa_loaded) {
 			RB_REMOVE(iked_activesas, &env->sc_activesas, csa);
-			(void)pfkey_sa_delete(env->sc_pfkey, csa);
+			(void)ipsec_sa_delete(env, csa);
 		}
 		if ((ipcomp = csa->csa_bundled) != NULL) {
 			log_debug("%s: free IPCOMP %p", __func__, ipcomp);
 			if (ipcomp->csa_loaded)
-				(void)pfkey_sa_delete(env->sc_pfkey, ipcomp);
+				(void)ipsec_sa_delete(env, ipcomp);
 			childsa_free(ipcomp);
 		}
 		childsa_free(csa);
@@ -472,7 +472,7 @@ config_setcoupled(struct iked *env, unsigned int couple)
 int
 config_getcoupled(struct iked *env, unsigned int type)
 {
-	return (pfkey_couple(env->sc_pfkey, &env->sc_sas,
+	return (ipsec_couple(env, &env->sc_sas,
 	    type == IMSG_CTL_COUPLE ? 1 : 0));
 }
 
@@ -622,7 +622,7 @@ config_setpfkey(struct iked *env, enum privsep_procid id)
 {
 	int	 s;
 
-	if ((s = pfkey_socket()) == -1)
+	if ((s = ipsec_socket(env)) == -1)
 		return (-1);
 	proc_compose_imsg(&env->sc_ps, id, -1,
 	    IMSG_PFKEY_SOCKET, -1, s, NULL, 0);
@@ -633,7 +633,7 @@ int
 config_getpfkey(struct iked *env, struct imsg *imsg)
 {
 	log_debug("%s: received pfkey fd %d", __func__, imsg->fd);
-	pfkey_init(env, imsg->fd);
+	ipsec_init(env, imsg->fd);
 	return (0);
 }
 

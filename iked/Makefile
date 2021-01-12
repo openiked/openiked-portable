@@ -7,6 +7,7 @@ SRCS=		ca.c chap_ms.c config.c control.c crypto.c dh.c \
 		imsg_util.c smult_curve25519_ref.c
 SRCS+=		eap_map.c ikev2_map.c
 SRCS+=		parse.y
+SRCS+=		ipsec.c
 MAN=		iked.conf.5 iked.8
 #NOMAN=		yes
 
