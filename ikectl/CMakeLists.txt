@@ -23,7 +23,6 @@ include(CheckIncludeFiles)
 #include(GNUInstallDirs)
 
 set(IKED_COMPAT		"${CMAKE_CURRENT_SOURCE_DIR}/../iked/compat")
-
 set(SRCS)
 
 if(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
@@ -42,11 +41,6 @@ elseif(CMAKE_BUILD_TYPE STREQUAL RELEASE)
 	message("Release build.")
 endif()
 
-check_include_files("sys/types.h;sys/queue.h;imsg.h" HAVE_IMSG_H)
-if(HAVE_IMSG_H)
-	add_definitions(-DHAVE_IMSG_H)
-endif()
-
 check_include_files(unistd.h HAVE_UNISTD_H)
 if(HAVE_UNISTD_H)
 	add_definitions(-DHAVE_UNISTD_H)
@@ -55,6 +49,11 @@ endif()
 check_include_files(dirent.h HAVE_DIRENT_H)
 if(HAVE_DIRENT_H)
 	add_definitions(-DHAVE_DIRENT_H)
+endif()
+
+check_include_files("sys/types.h;sys/queue.h;imsg.h" HAVE_IMSG_H)
+if(HAVE_IMSG_H)
+	add_definitions(-DHAVE_IMSG_H)
 endif()
 
 check_function_exists(recallocarray HAVE_RECALLOCARRAY)
@@ -278,9 +277,6 @@ if(HAVE_GETOPT)
         add_definitions(-DHAVE_GETOPT)
 endif()
 
-if(NOT HAVE_FREEZERO)
-	list(APPEND SRCS ${IKED_COMPAT}/freezero.c)
-endif()
 if(NOT HAVE_RECALLOCARRAY)
 	list(APPEND SRCS ${IKED_COMPAT}/recallocarray.c)
 endif()
@@ -321,6 +317,18 @@ endif()
 if(NOT HAVE_STRLCAT)
 	list(APPEND SRCS ${IKED_COMPAT}/strlcat.c)
 endif()
+if(NOT HAVE_FREEZERO)
+	list(APPEND SRCS ${IKED_COMPAT}/freezero.c)
+endif()
+if(NOT HAVE_ARC4RANDOM_BUF)
+	list(APPEND SRCS ${IKED_COMPAT}/arc4random.c)
+endif()
+if(NOT HAVE_ARC4RANDOM_UNIFORM)
+	list(APPEND SRCS ${IKED_COMPAT}/arc4random_uniform.c)
+endif()
+if(NOT HAVE_EXPLICIT_BZERO)
+	list(APPEND SRCS ${IKED_COMPAT}/explicit_bzero.c)
+endif()
 
 list(APPEND SRCS
 	ikeca.c
@@ -334,7 +342,6 @@ list(APPEND SRCS
 add_executable(ikectl ${SRCS})
 
 set(CFLAGS)
-
 list(APPEND CFLAGS
 	-O2
 	-Wall
