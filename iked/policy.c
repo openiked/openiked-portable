@@ -643,7 +643,7 @@ sa_free_flows(struct iked *env, struct iked_saflows *head)
 		if (flow->flow_loaded)
 			RB_REMOVE(iked_flows, &env->sc_activeflows, flow);
 		TAILQ_REMOVE(head, flow, flow_entry);
-		(void)pfkey_flow_delete(env->sc_pfkey, flow);
+		(void)ipsec_flow_delete(env, flow);
 		flow_free(flow);
 	}
 }

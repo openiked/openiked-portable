@@ -1053,6 +1053,22 @@ int	 pfkey_flush(int);
 int	 pfkey_socket(void);
 void	 pfkey_init(struct iked *, int fd);
 
+/* ipsec.c */
+int	 ipsec_couple(struct iked *, struct iked_sas *, int);
+int	 ipsec_flow_add(struct iked *, struct iked_flow *);
+int	 ipsec_flow_delete(struct iked *, struct iked_flow *);
+int	 ipsec_sa_init(struct iked *, struct iked_childsa *, uint32_t *);
+int	 ipsec_sa_add(struct iked *, struct iked_childsa *, struct iked_childsa *);
+int	 ipsec_sa_update_addresses(struct iked *, struct iked_childsa *);
+int	 ipsec_sa_delete(struct iked *, struct iked_childsa *);
+int	 ipsec_sa_last_used(struct iked *, struct iked_childsa *, uint64_t *);
+int	 ipsec_sa_rpl(struct iked *, struct iked_childsa *, uint32_t *);
+int	 ipsec_sa_lifetimes(struct iked *, struct iked_childsa *, struct iked_lifetime *,
+	     struct iked_lifetime *, struct iked_lifetime *);
+int	 ipsec_flush(struct iked *);
+int	 ipsec_socket(struct iked *);
+void	 ipsec_init(struct iked *, int fd);
+
 /* ca.c */
 pid_t	 caproc(struct privsep *, struct privsep_proc *);
 int	 ca_setreq(struct iked *, struct iked_sa *, struct iked_static_id *,
