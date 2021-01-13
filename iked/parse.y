@@ -30,7 +30,11 @@
 #include <sys/stat.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#ifdef __FreeBSD__
+#include <netipsec/ipsec.h>
+#else
 #include <netinet/ip_ipsp.h>
+#endif
 #include <arpa/inet.h>
 
 #include <ctype.h>

@@ -216,6 +216,30 @@ typedef int evutil_socket_t;
 # endif
 #endif /* HOST_NAME_MAX */
 
+/* FreeBSD */
+#ifndef CPI_PRIVATE_MIN
+#define CPI_PRIVATE_MIN		61440
+#endif
+#ifndef CPI_PRIVATE_MAX
+#define CPI_PRIVATE_MAX		65535
+#endif
+
+#if !defined(SADB_X_ADDFLOW) && defined(SADB_X_SPDUPDATE)
+#define SADB_X_ADDFLOW	SADB_X_SPDUPDATE
+#endif
+#if !defined(SADB_X_DELFLOW) && defined(SADB_X_SPDDELETE)
+#define SADB_X_DELFLOW	SADB_X_SPDDELETE
+#endif
+#if !defined(SADB_X_FLOW_TYPE_DENY)
+#define SADB_X_FLOW_TYPE_DENY	1
+#endif
+#if !defined(IPSP_DIRECTION_IN)
+#define IPSP_DIRECTION_IN	IPSEC_DIR_INBOUND
+#endif
+#if !defined(IPSP_DIRECTION_OUT)
+#define IPSP_DIRECTION_OUT	IPSEC_DIR_OUTBOUND
+#endif
+
 #if !defined(__packed)
 #define __packed	__attribute__((__packed__))
 #endif
