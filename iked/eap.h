@@ -19,6 +19,8 @@
 #ifndef IKED_EAP_H
 #define IKED_EAP_H
 
+#include "openbsd-compat.h"
+
 struct eap_header {
 	uint8_t		eap_code;
 	uint8_t		eap_id;
