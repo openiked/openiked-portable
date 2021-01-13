@@ -20,6 +20,8 @@
 #ifndef IKED_IKEV2_H
 #define IKED_IKEV2_H
 
+#include "openbsd-compat.h"
+
 #define IKEV2_VERSION		0x20	/* IKE version 2.0 */
 #define IKEV1_VERSION		0x10	/* IKE version 1.0 */
 

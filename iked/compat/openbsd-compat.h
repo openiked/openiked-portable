@@ -171,4 +171,8 @@ int ffs(int);
 typedef int evutil_socket_t;
 #endif
 
+#if !defined(__packed)
+#define __packed	__attribute__((__packed__))
+#endif
+
 #endif /* !_OPENBSD_COMPAT_H */
