@@ -332,6 +332,8 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	list(APPEND SRCS ipsec-linux.c)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 	list(APPEND SRCS ipsec-linux.c)
+elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+	list(APPEND SRCS ipsec-linux.c)
 endif()
 
 list(APPEND SRCS

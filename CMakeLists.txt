@@ -16,5 +16,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(openiked)
 
+if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+	include_directories("/usr/local/include")
+	library_directories("/usr/local/lib")
+endif()
+
 add_subdirectory(iked)
 add_subdirectory(ikectl)
