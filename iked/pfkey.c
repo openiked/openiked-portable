@@ -462,11 +462,19 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	struct sadb_address	 sa_src, sa_dst, sa_pxy;
 	struct sadb_key		 sa_authkey, sa_enckey;
 	struct sadb_lifetime	 sa_ltime_hard, sa_ltime_soft;
+#ifdef SADB_X_EXT_UDPENCAP
 	struct sadb_x_udpencap	 udpencap;
+#endif
+#ifdef SADB_X_EXT_TAP
 	struct sadb_x_tag	 sa_tag;
 	char			*tag = NULL;
+#endif
+#ifdef SADB_X_EXT_TAP
 	struct sadb_x_tap	 sa_tap;
+#endif
+#ifdef SADB_X_EXT_RDOMAIN
 	struct sadb_x_rdomain	 sa_rdomain;
+#endif
 	struct sockaddr_storage	 ssrc, sdst, spxy;
 	struct sadb_ident	*sa_srcid, *sa_dstid;
 	struct iked_lifetime	*lt;
@@ -548,10 +556,10 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 
 	bzero(&sa_authkey, sizeof(sa_authkey));
 	bzero(&sa_enckey, sizeof(sa_enckey));
-	bzero(&udpencap, sizeof udpencap);
 	bzero(&sa_ltime_hard, sizeof(sa_ltime_hard));
 	bzero(&sa_ltime_soft, sizeof(sa_ltime_soft));
 
+#ifdef SADB_X_EXT_RDOMAIN
 	if (pol->pol_rdomain >= 0) {
 		bzero(&sa_rdomain, sizeof(sa_rdomain));
 		sa_rdomain.sadb_x_rdomain_exttype = SADB_X_EXT_RDOMAIN;
@@ -569,10 +577,13 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 			sa_rdomain.sadb_x_rdomain_dom2 = pol->pol_rdomain;
 		}
 	}
+#endif
 
 	if (action == SADB_DELETE)
 		goto send;
 
+#ifdef SADB_X_EXT_UDPENCAP
+	bzero(&udpencap, sizeof udpencap);
 	if (satype == SADB_SATYPE_ESP &&
 	    sa->csa_ikesa->sa_udpencap && sa->csa_ikesa->sa_natt) {
 		sadb.sadb_sa_flags |= SADB_X_SAFLAGS_UDPENCAP;
@@ -584,6 +595,7 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		log_debug("%s: udpencap port %d", __func__,
 		    ntohs(udpencap.sadb_x_udpencap_port));
 	}
+#endif
 
 	if (action == IKED_SADB_UPDATE_SA_ADDRESSES) {
 		smsg.sadb_msg_type = SADB_UPDATE;
@@ -676,6 +688,7 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		    IKESA_SRCID(sa->csa_ikesa), SADB_EXT_IDENTITY_DST);
 	}
 
+#ifdef SADB_X_EXT_TAG
 	tag = sa->csa_ikesa->sa_tag;
 	if (tag != NULL && *tag != '\0') {
 		bzero(&sa_tag, sizeof(sa_tag));
@@ -685,7 +698,9 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		sa_tag.sadb_x_tag_taglen = strlen(tag) + 1;
 	} else
 		tag = NULL;
+#endif
 
+#ifdef SADB_X_EXT_TAP
 	if (pol->pol_tap != 0) {
 		dotap = 1;
 		bzero(&sa_tap, sizeof(sa_tap));
@@ -693,6 +708,7 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		sa_tap.sadb_x_tap_len = sizeof(sa_tap) / 8;
 		sa_tap.sadb_x_tap_unit = pol->pol_tap;
 	}
+#endif
 
  send:
 	iov_cnt = 0;
@@ -753,12 +769,14 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		iov_cnt++;
 	}
 
+#ifdef SADB_X_EXT_UDPENCAP
 	if (udpencap.sadb_x_udpencap_len) {
 		iov[iov_cnt].iov_base = &udpencap;
 		iov[iov_cnt].iov_len = sizeof(udpencap);
 		smsg.sadb_msg_len += udpencap.sadb_x_udpencap_len;
 		iov_cnt++;
 	}
+#endif
 
 	if (sa_enckey.sadb_key_len) {
 		/* encryption key */
@@ -798,6 +816,7 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		iov_cnt++;
 	}
 
+#ifdef SADB_X_EXT_TAG
 	if (tag != NULL) {
 		/* tag identity */
 		iov[iov_cnt].iov_base = &sa_tag;
@@ -808,7 +827,9 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		smsg.sadb_msg_len += sa_tag.sadb_x_tag_len;
 		iov_cnt++;
 	}
+#endif
 
+#ifdef SADB_X_EXT_TAP
 	if (dotap != 0) {
 		/* enc(4) device tap unit */
 		iov[iov_cnt].iov_base = &sa_tap;
@@ -816,13 +837,16 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		smsg.sadb_msg_len += sa_tap.sadb_x_tap_len;
 		iov_cnt++;
 	}
+#endif
 
+#ifdef SADB_X_EXT_RDOMAIN
 	if (pol->pol_rdomain >= 0) {
 		iov[iov_cnt].iov_base = &sa_rdomain;
 		iov[iov_cnt].iov_len = sizeof(sa_rdomain);
 		smsg.sadb_msg_len += sa_rdomain.sadb_x_rdomain_len;
 		iov_cnt++;
 	}
+#endif
 
 	ret = pfkey_write(sd, &smsg, iov, iov_cnt, NULL, NULL);
 
