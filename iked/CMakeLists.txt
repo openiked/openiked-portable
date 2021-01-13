@@ -333,7 +333,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 	list(APPEND SRCS ipsec-linux.c)
 elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-	list(APPEND SRCS ipsec-linux.c)
+	list(APPEND SRCS ipsec.c pfkey.c)
 endif()
 
 list(APPEND SRCS
