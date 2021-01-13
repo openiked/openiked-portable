@@ -987,6 +987,7 @@ pfkey_sa_lookup(int sd, struct iked_childsa *sa, uint64_t *last_used)
 			log_warn("%s: message", __func__);
 		goto done;
 	}
+#ifdef SADB_X_EXT_LIFETIME_LASTUSE
 	if (last_used) {
 		if ((sa_life = pfkey_find_ext(data, n,
 		    SADB_X_EXT_LIFETIME_LASTUSE)) == NULL) {
@@ -997,6 +998,7 @@ pfkey_sa_lookup(int sd, struct iked_childsa *sa, uint64_t *last_used)
 		*last_used = sa_life->sadb_lifetime_usetime;
 		log_debug("%s: last_used %llu", __func__, *last_used);
 	}
+#endif
 
 done:
 	freezero(data, n);
