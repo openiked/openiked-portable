@@ -35,20 +35,6 @@ ipsec_sa_last_used(struct iked *env, struct iked_childsa *sa, uint64_t *last_use
 }
 
 int
-ipsec_sa_rpl(struct iked *env, struct iked_childsa *sa, uint32_t *rpl)
-{
-	return pfkey_sa_rpl(env->sc_pfkey, sa, rpl);
-}
-
-int
-ipsec_sa_lifetimes(struct iked *env, struct iked_childsa *sa,
-    struct iked_lifetime *lthard, struct iked_lifetime *ltsoft,
-    struct iked_lifetime *ltcur)
-{
-	return pfkey_sa_lifetimes(env->sc_pfkey, sa, lthard, ltsoft, ltcur);
-}
-
-int
 ipsec_flow_add(struct iked *env, struct iked_flow *flow)
 {
 	return pfkey_flow_add(env->sc_pfkey, flow);

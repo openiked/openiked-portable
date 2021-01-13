@@ -23,7 +23,11 @@
 #include <sys/uio.h>
 
 #include <netinet/in.h>
+#ifdef __FreeBSD__
+#include <netipsec/ipsec.h>
+#else
 #include <netinet/ip_ipsp.h>
+#endif
 #include <arpa/inet.h>
 
 #include <stdlib.h>
