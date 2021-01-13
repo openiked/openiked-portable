@@ -2,6 +2,7 @@
 
 /*
  * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
+ * Copyright (c) 2016 Marcel Moolenaar <marcel@FreeBSD.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -35,6 +36,7 @@
 #ifdef HAVE_IPSP_H
 #include <netinet/ip_ipsp.h>
 #endif
+#include <netinet/udp.h>
 #include <arpa/inet.h>
 
 #include <stdlib.h>
@@ -1103,6 +1105,17 @@ ikev2_init_recv(struct iked *env, struct iked_message *msg,
 		    " updated SA to peer %s local %s", __func__,
 		    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0),
 		    print_host((struct sockaddr *)&sa->sa_local.addr, NULL, 0));
+
+#if defined(UDP_ENCAP_ESPINUDP)
+		int	 sopt;
+		sopt = UDP_ENCAP_ESPINUDP;
+		if (setsockopt(sock->sock_fd, IPPROTO_UDP, UDP_ENCAP,
+		    &sopt, sizeof(sopt)) < 0) {
+			log_warn("%s: failed to set UDP encap socket option",
+			    __func__);
+			return;
+		}
+#endif
 	}
 
 	switch (hdr->ike_exchange) {
