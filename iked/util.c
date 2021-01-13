@@ -328,13 +328,15 @@ sendtofrom(int s, void *buf, size_t len, int flags, struct sockaddr *to,
 	switch (to->sa_family) {
 	case AF_INET:
 #ifdef IP_SENDSRCADDR
+		in = (struct sockaddr_in *)from;
+		if (in->sin_addr.s_addr == INADDR_ANY)
+			break;
 		msg.msg_control = &cmsgbuf;
 		msg.msg_controllen += sizeof(cmsgbuf.inbuf);
 		cmsg = CMSG_FIRSTHDR(&msg);
 		cmsg->cmsg_len = CMSG_LEN(sizeof(struct in_addr));
 		cmsg->cmsg_level = IPPROTO_IP;
 		cmsg->cmsg_type = IP_SENDSRCADDR;
-		in = (struct sockaddr_in *)from;
 		memcpy(CMSG_DATA(cmsg), &in->sin_addr, sizeof(struct in_addr));
 #endif
 		break;
