@@ -22,6 +22,8 @@
 #include <sys/uio.h>
 #include <sys/tree.h>
 
+#include <netinet/in.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
