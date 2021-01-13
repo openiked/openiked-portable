@@ -18,7 +18,7 @@ project(openiked)
 
 if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 	include_directories("/usr/local/include")
-	library_directories("/usr/local/lib")
+	link_directories("/usr/local/lib")
 endif()
 
 add_subdirectory(iked)
