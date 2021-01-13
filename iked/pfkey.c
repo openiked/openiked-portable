@@ -208,7 +208,9 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	struct sadb_address	 sa_src, sa_dst, sa_local, sa_peer, sa_smask,
 				 sa_dmask;
 	struct sadb_protocol	 sa_flowtype, sa_protocol;
+#ifdef SADB_X_EXT_RDOMAIN
 	struct sadb_x_rdomain	 sa_rdomain;
+#endif
 	struct sadb_ident	*sa_srcid, *sa_dstid;
 	struct sockaddr_storage	 ssrc, sdst, slocal, speer, smask, dmask;
 	struct iovec		 iov[IOV_CNT];
@@ -350,6 +352,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 		    SADB_EXT_IDENTITY_DST);
 	}
 
+#ifdef SADB_X_EXT_RDOMAIN
 	if (flow->flow_rdomain >= 0) {
 		/* install flow in specific rdomain */
 		bzero(&sa_rdomain, sizeof(sa_rdomain));
@@ -357,6 +360,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 		sa_rdomain.sadb_x_rdomain_len = sizeof(sa_rdomain) / 8;
 		sa_rdomain.sadb_x_rdomain_dom1 = flow->flow_rdomain;
 	}
+#endif
 
 	iov_cnt = 0;
 
@@ -439,12 +443,14 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 		iov_cnt++;
 	}
 
+#ifdef SADB_X_EXT_RDOMAIN
 	if (flow->flow_rdomain >= 0) {
 		iov[iov_cnt].iov_base = &sa_rdomain;
 		iov[iov_cnt].iov_len = sizeof(sa_rdomain);
 		smsg.sadb_msg_len += sa_rdomain.sadb_x_rdomain_len;
 		iov_cnt++;
 	}
+#endif
 
 	ret = pfkey_write(sd, &smsg, iov, iov_cnt, NULL, NULL);
 
@@ -863,7 +869,9 @@ pfkey_sa_lookup(int sd, struct iked_childsa *sa, uint64_t *last_used)
 	struct sadb_msg		*msg, smsg;
 	struct sadb_address	 sa_src, sa_dst;
 	struct sadb_sa		 sadb;
+#ifdef SADB_X_EXT_RDOMAIN
 	struct sadb_x_rdomain	 sa_rdomain;
+#endif
 	struct sadb_lifetime	*sa_life;
 	struct sockaddr_storage	 ssrc, sdst;
 	struct iovec		 iov[IOV_CNT];
@@ -907,6 +915,7 @@ pfkey_sa_lookup(int sd, struct iked_childsa *sa, uint64_t *last_used)
 	sadb.sadb_sa_state = SADB_SASTATE_MATURE;
 	sadb.sadb_sa_replay = 64;
 
+#ifdef SADB_X_EXT_RDOMAIN
 	if (pol->pol_rdomain >= 0) {
 		rdomain = (sa->csa_dir == IPSP_DIRECTION_IN) ?
 		    iked_rdomain : pol->pol_rdomain;
@@ -915,6 +924,7 @@ pfkey_sa_lookup(int sd, struct iked_childsa *sa, uint64_t *last_used)
 		sa_rdomain.sadb_x_rdomain_len = sizeof(sa_rdomain) / 8;
 		sa_rdomain.sadb_x_rdomain_dom1 = rdomain;
 	}
+#endif
 
 	bzero(&sa_src, sizeof(sa_src));
 	sa_src.sadb_address_len = (sizeof(sa_src) + ROUNDUP(ssrc.ss_len)) / 8;
@@ -955,12 +965,14 @@ pfkey_sa_lookup(int sd, struct iked_childsa *sa, uint64_t *last_used)
 	smsg.sadb_msg_len += sa_dst.sadb_address_len;
 	iov_cnt++;
 
+#ifdef SADB_X_EXT_RDOMAIN
 	if (pol->pol_rdomain >= 0) {
 		iov[iov_cnt].iov_base = &sa_rdomain;
 		iov[iov_cnt].iov_len = sizeof(sa_rdomain);
 		smsg.sadb_msg_len += sa_rdomain.sadb_x_rdomain_len;
 		iov_cnt++;
 	}
+#endif
 
 	if ((ret = pfkey_write(sd, &smsg, iov, iov_cnt, &data, &n)) != 0)
 		return (-1);
@@ -1119,7 +1131,9 @@ pfkey_sagroup(int sd, uint8_t satype1, uint8_t action,
 	struct sadb_address	sa_dst1, sa_dst2;
 	struct sockaddr_storage	sdst1, sdst2;
 	struct sadb_protocol	sa_proto;
+#ifdef SADB_X_EXT_RDOMAIN
 	struct sadb_x_rdomain	sa_rdomain;
+#endif
 	struct iked_policy	*pol;
 	struct iovec		iov[IOV_CNT];
 	int			iov_cnt;
@@ -1166,6 +1180,7 @@ pfkey_sagroup(int sd, uint8_t satype1, uint8_t action,
 	sadb2.sadb_sa_state = SADB_SASTATE_MATURE;
 
 	/* Incoming SA1 (IPCOMP) and SA2 (ESP) are in different/other rdomain */
+#ifdef SADB_X_EXT_RDOMAIN
 	group_rdomain =
 	    (pol = sa1->csa_ikesa->sa_policy) != NULL &&
 	    pol->pol_rdomain >= 0 &&
@@ -1185,6 +1200,7 @@ pfkey_sagroup(int sd, uint8_t satype1, uint8_t action,
 			sa_rdomain.sadb_x_rdomain_dom2 = pol->pol_rdomain;
 		}
 	}
+#endif
 
 	iov_cnt = 0;
 
@@ -1245,6 +1261,7 @@ pfkey_sagroup(int sd, uint8_t satype1, uint8_t action,
 	smsg.sadb_msg_len += sa_proto.sadb_protocol_len;
 	iov_cnt++;
 
+#ifdef SADB_X_EXT_RDOMAIN
 	/* SA1 and SA2 are from different rdomains */
 	if (group_rdomain) {
 		iov[iov_cnt].iov_base = &sa_rdomain;
@@ -1252,6 +1269,7 @@ pfkey_sagroup(int sd, uint8_t satype1, uint8_t action,
 		smsg.sadb_msg_len += sa_rdomain.sadb_x_rdomain_len;
 		iov_cnt++;
 	}
+#endif
 
 	return (pfkey_write(sd, &smsg, iov, iov_cnt, NULL, NULL));
 }
