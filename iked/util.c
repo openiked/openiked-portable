@@ -323,12 +323,12 @@ sendtofrom(int s, void *buf, size_t len, int flags, struct sockaddr *to,
 	msg.msg_iovlen = 1;
 	msg.msg_name = to;
 	msg.msg_namelen = tolen;
-	msg.msg_control = &cmsgbuf;
 	msg.msg_controllen = 0;
 
 	switch (to->sa_family) {
 	case AF_INET:
 #ifdef IP_SENDSRCADDR
+		msg.msg_control = &cmsgbuf;
 		msg.msg_controllen += sizeof(cmsgbuf.inbuf);
 		cmsg = CMSG_FIRSTHDR(&msg);
 		cmsg->cmsg_len = CMSG_LEN(sizeof(struct in_addr));
@@ -340,6 +340,7 @@ sendtofrom(int s, void *buf, size_t len, int flags, struct sockaddr *to,
 		break;
 	case AF_INET6:
 #ifdef IPV6_PKTINFO
+		msg.msg_control = &cmsgbuf;
 		msg.msg_controllen += sizeof(cmsgbuf.in6buf);
 		cmsg = CMSG_FIRSTHDR(&msg);
 		cmsg->cmsg_len = CMSG_LEN(sizeof(struct in6_pktinfo));
