@@ -233,11 +233,15 @@ typedef int evutil_socket_t;
 #if !defined(SADB_X_FLOW_TYPE_DENY)
 #define SADB_X_FLOW_TYPE_DENY	1
 #endif
+
+#if !defined HAVE_IPSP_H && (defined HAVE_NET_IPSEC_H || \
+    defined HAVE_LINUX_IPSEC_H || defined HAVE_NETINET6_IPSEC_H)
 #if !defined(IPSP_DIRECTION_IN)
 #define IPSP_DIRECTION_IN	IPSEC_DIR_INBOUND
 #endif
 #if !defined(IPSP_DIRECTION_OUT)
 #define IPSP_DIRECTION_OUT	IPSEC_DIR_OUTBOUND
+#endif
 #endif
 
 #if !defined(__packed)

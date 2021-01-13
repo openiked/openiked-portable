@@ -49,6 +49,26 @@ if(HAVE_DIRENT_H)
 	add_definitions(-DHAVE_DIRENT_H)
 endif()
 
+check_include_files("sys/socket.h;netinet/ip_ipsp.h" HAVE_IPSP_H)
+if(HAVE_IPSP_H)
+	add_definitions(-DHAVE_IPSP_H)
+endif()
+
+check_include_files("sys/types.h;netipsec/ipsec.h" HAVE_NET_IPSEC_H)
+if(HAVE_NET_IPSEC_H)
+	add_definitions(-DHAVE_NET_IPSEC_H)
+endif()
+
+check_include_files("netinet6/ipsec.h" HAVE_NETINET6_IPSEC_H)
+if(HAVE_NETINET6_IPSEC_H)
+	add_definitions(-DHAVE_NETINET6_IPSEC_H)
+endif()
+
+check_include_files("linux/ipsec.h" HAVE_LINUX_IPSEC_H)
+if(HAVE_LINUX_IPSEC_H)
+	add_definitions(-DHAVE_LINUX_IPSEC_H)
+endif()
+
 check_include_files("sys/types.h;sys/queue.h;imsg.h" HAVE_IMSG_H)
 if(HAVE_IMSG_H)
 	add_definitions(-DHAVE_IMSG_H)
