@@ -326,11 +326,11 @@ sendtofrom(int s, void *buf, size_t len, int flags, struct sockaddr *to,
 	msg.msg_control = &cmsgbuf;
 	msg.msg_controllen = 0;
 
-	cmsg = CMSG_FIRSTHDR(&msg);
 	switch (to->sa_family) {
 	case AF_INET:
 #ifdef IP_SENDSRCADDR
 		msg.msg_controllen += sizeof(cmsgbuf.inbuf);
+		cmsg = CMSG_FIRSTHDR(&msg);
 		cmsg->cmsg_len = CMSG_LEN(sizeof(struct in_addr));
 		cmsg->cmsg_level = IPPROTO_IP;
 		cmsg->cmsg_type = IP_SENDSRCADDR;
@@ -341,6 +341,7 @@ sendtofrom(int s, void *buf, size_t len, int flags, struct sockaddr *to,
 	case AF_INET6:
 #ifdef IPV6_PKTINFO
 		msg.msg_controllen += sizeof(cmsgbuf.in6buf);
+		cmsg = CMSG_FIRSTHDR(&msg);
 		cmsg->cmsg_len = CMSG_LEN(sizeof(struct in6_pktinfo));
 		cmsg->cmsg_level = IPPROTO_IPV6;
 		cmsg->cmsg_type = IPV6_PKTINFO;
