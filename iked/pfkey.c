@@ -39,6 +39,7 @@
 #include <netinet/ip_ipsp.h>
 #endif
 #include <net/pfkeyv2.h>
+#include <netinet/udp.h>
 
 #include <err.h>
 #include <errno.h>
@@ -673,6 +674,9 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	struct sadb_lifetime	 sa_ltime_hard, sa_ltime_soft;
 #ifdef SADB_X_EXT_UDPENCAP
 	struct sadb_x_udpencap	 udpencap;
+#else
+	struct sadb_x_nat_t_type nat_type;
+	struct sadb_x_nat_t_port nat_sport, nat_dport;
 #endif
 #ifdef SADB_X_EXT_TAP
 	struct sadb_x_tag	 sa_tag;
@@ -808,10 +812,10 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	if (action == SADB_DELETE)
 		goto send;
 
-#ifdef SADB_X_EXT_UDPENCAP
-	bzero(&udpencap, sizeof udpencap);
 	if (satype == SADB_SATYPE_ESP &&
 	    sa->csa_ikesa->sa_udpencap && sa->csa_ikesa->sa_natt) {
+#ifdef SADB_X_EXT_UDPENCAP
+		bzero(&udpencap, sizeof udpencap);
 		sadb.sadb_sa_flags |= SADB_X_SAFLAGS_UDPENCAP;
 		udpencap.sadb_x_udpencap_exttype = SADB_X_EXT_UDPENCAP;
 		udpencap.sadb_x_udpencap_len = sizeof(udpencap) / 8;
@@ -820,8 +824,31 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 
 		log_debug("%s: udpencap port %d", __func__,
 		    ntohs(udpencap.sadb_x_udpencap_port));
-	}
+#else
+		bzero(&nat_type, sizeof(nat_type));
+		nat_type.sadb_x_nat_t_type_len = sizeof(nat_type) / 8;
+		nat_type.sadb_x_nat_t_type_exttype = SADB_X_EXT_NAT_T_TYPE;
+		nat_type.sadb_x_nat_t_type_type = UDP_ENCAP_ESPINUDP;
+		bzero(&nat_sport, sizeof(nat_sport));
+		nat_sport.sadb_x_nat_t_port_len = sizeof(nat_sport) / 8;
+		nat_sport.sadb_x_nat_t_port_exttype = SADB_X_EXT_NAT_T_SPORT;
+		nat_sport.sadb_x_nat_t_port_port =
+		    sa->csa_ikesa->sa_local.addr_port;
+		bzero(&nat_dport, sizeof(nat_dport));
+		nat_dport.sadb_x_nat_t_port_len = sizeof(nat_dport) / 8;
+		nat_dport.sadb_x_nat_t_port_exttype = SADB_X_EXT_NAT_T_DPORT;
+		nat_dport.sadb_x_nat_t_port_port =
+		    sa->csa_ikesa->sa_peer.addr_port;
+
+		log_debug("%s: NAT-T: type=%s (%d) sport=%d dport=%d",
+		    __func__,
+		    (nat_type.sadb_x_nat_t_type_type == UDP_ENCAP_ESPINUDP)
+		    ? "UDP encap" : "unknown",
+		    nat_type.sadb_x_nat_t_type_type,
+		    ntohs(nat_sport.sadb_x_nat_t_port_port),
+		    ntohs(nat_dport.sadb_x_nat_t_port_port));
 #endif
+	}
 
 	if (action == IKED_SADB_UPDATE_SA_ADDRESSES) {
 		smsg.sadb_msg_type = SADB_UPDATE;
@@ -1008,6 +1035,21 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		iov[iov_cnt].iov_base = &udpencap;
 		iov[iov_cnt].iov_len = sizeof(udpencap);
 		smsg.sadb_msg_len += udpencap.sadb_x_udpencap_len;
+		iov_cnt++;
+	}
+#else
+	if (nat_type.sadb_x_nat_t_type_len) {
+		iov[iov_cnt].iov_base = &nat_type;
+		iov[iov_cnt].iov_len = sizeof(nat_type);
+		smsg.sadb_msg_len += nat_type.sadb_x_nat_t_type_len;
+		iov_cnt++;
+		iov[iov_cnt].iov_base = &nat_sport;
+		iov[iov_cnt].iov_len = sizeof(nat_sport);
+		smsg.sadb_msg_len += nat_sport.sadb_x_nat_t_port_len;
+		iov_cnt++;
+		iov[iov_cnt].iov_base = &nat_dport;
+		iov[iov_cnt].iov_len = sizeof(nat_dport);
+		smsg.sadb_msg_len += nat_dport.sadb_x_nat_t_port_len;
 		iov_cnt++;
 	}
 #endif
