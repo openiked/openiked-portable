@@ -1,6 +1,7 @@
 /*	$OpenBSD: chap_ms.c,v 1.9 2015/08/21 11:59:27 reyk Exp $	*/
 
 /*
+ * Copyright (c) 2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  * Copyright (c) 1997-2001 Brian Somers <brian@Awfulhak.org>
  * Copyright (c) 1997 Gabor Kincses <gabor@acm.org>

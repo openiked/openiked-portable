@@ -1,6 +1,7 @@
 /*	$OpenBSD: pfkey.c,v 1.74 2020/12/04 16:18:14 tobhe Exp $	*/
 
 /*
+ * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2016 Marcel Moolenaar <marcel@FreeBSD.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  * Copyright (c) 2004, 2005 Hans-Joerg Hoexer <hshoexer@openbsd.org>

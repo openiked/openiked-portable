@@ -1,6 +1,7 @@
 /*	$OpenBSD: dh.c,v 1.24 2020/10/28 20:54:13 tobhe Exp $	*/
 
 /*
+ * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2010-2014 Reyk Floeter <reyk@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any

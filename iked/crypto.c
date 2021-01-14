@@ -1,6 +1,7 @@
 /*	$OpenBSD: crypto.c,v 1.31 2020/12/06 19:46:42 tobhe Exp $	*/
 
 /*
+ * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any

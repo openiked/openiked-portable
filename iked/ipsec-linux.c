@@ -1,6 +1,7 @@
 /*	$OpenBSD: $	*/
 
 /*
+ * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2020 Markus Friedl
  *
  * Permission to use, copy, modify, and distribute this software for any

@@ -1,6 +1,7 @@
 /*	$OpenBSD: ca.c,v 1.75 2020/12/05 19:10:47 tobhe Exp $	*/
 
 /*
+ * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
