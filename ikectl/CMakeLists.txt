@@ -371,3 +371,5 @@ target_include_directories(ikectl
 target_link_libraries(ikectl
 	PRIVATE util event crypto ssl
 )
+
+install(TARGETS ikectl)

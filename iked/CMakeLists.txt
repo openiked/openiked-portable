@@ -438,3 +438,5 @@ add_custom_command(
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/eap.h
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmap.sh
 )
+
+install(TARGETS iked)
