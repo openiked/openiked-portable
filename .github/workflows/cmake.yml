@@ -54,6 +54,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install libevent
+      run: brew install libevent
+
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
 
