@@ -48,9 +48,9 @@ jobs:
   macos:
     strategy:
       matrix:
-        os: [ macos-10.15, macos-11.0 ]
+        os: [ macos-latest]
     runs-on: ${{ matrix.os }}
-    
+
     steps:
     - uses: actions/checkout@v2
 
