@@ -1,7 +1,7 @@
 /*	$OpenBSD: config.c,v 1.74 2020/11/29 21:00:43 tobhe Exp $	*/
 
 /*
- * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
+ * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any

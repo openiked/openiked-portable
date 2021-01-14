@@ -1,7 +1,7 @@
 /*	$OpenBSD: iked.h,v 1.179 2020/12/21 22:49:36 tobhe Exp $	*/
 
 /*
- * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
+ * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any

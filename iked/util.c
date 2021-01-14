@@ -1,6 +1,7 @@
 /*	$OpenBSD: util.c,v 1.40 2020/08/15 11:31:17 tobhe Exp $	*/
 
 /*
+ * Copyright (c) 2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any

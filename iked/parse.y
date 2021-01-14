@@ -1,7 +1,7 @@
 /*	$OpenBSD: parse.y,v 1.124 2020/12/29 19:49:38 benno Exp $	*/
 
 /*
- * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
+ * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
  * Copyright (c) 2010-2013 Reyk Floeter <reyk@openbsd.org>
  * Copyright (c) 2004, 2005 Hans-Joerg Hoexer <hshoexer@openbsd.org>
  * Copyright (c) 2002, 2003, 2004 Henning Brauer <henning@openbsd.org>
