@@ -18,6 +18,10 @@ project(openiked)
 
 include_directories("/usr/local/include")
 link_directories("/usr/local/lib")
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+	include_directories("/usr/local/opt/openssl@1.1/include")
+	link_directories("/usr/local/opt/openssl@1.1/lib")
+endif()
 
 add_subdirectory(iked)
 add_subdirectory(ikectl)
