@@ -22,6 +22,7 @@ list(APPEND VERSIONED_FILES iked.c)
 
 set(IKED_COMPAT		"${CMAKE_CURRENT_SOURCE_DIR}/../iked/compat")
 set(SRCS)
+set(CSRCS)
 
 if(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
 	add_definitions(-DHAVE_ATTRIBUTE__BOUNDED__)
@@ -265,6 +266,11 @@ if(HAVE_SYSLOG)
 	add_definitions(-DHAVE_SYSLOG)
 endif()
 
+check_function_exists(vis HAVE_VIS)
+if(HAVE_VIS)
+	add_definitions(-DHAVE_VIS)
+endif()
+
 check_symbol_exists(timespecsub sys/time.h HAVE_TIMESPECSUB)
 if(HAVE_TIMESPECSUB)
 	add_definitions(-DHAVE_TIMESPECSUB)
@@ -301,59 +307,62 @@ if(HAVE_GETOPT)
 endif()
 
 if(NOT HAVE_RECALLOCARRAY)
-	list(APPEND SRCS ${IKED_COMPAT}/recallocarray.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/recallocarray.c)
 endif()
 if(NOT HAVE_SOCK_NONBLOCK)
-	list(APPEND SRCS ${IKED_COMPAT}/bsd-socket.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/bsd-socket.c)
 endif()
 if(NOT HAVE_SETRESUID)
-	list(APPEND SRCS ${IKED_COMPAT}/bsd-setres_id.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/bsd-setres_id.c)
 endif()
 if(NOT HAVE_GETRTABLE)
-	list(APPEND SRCS ${IKED_COMPAT}/getrtable.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/getrtable.c)
 endif()
 if(NOT HAVE_GETDTABLECOUNT)
-	list(APPEND SRCS ${IKED_COMPAT}/getdtablecount.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/getdtablecount.c)
 endif()
 if(NOT HAVE_SETPROCTITLE)
-	list(APPEND SRCS ${IKED_COMPAT}/setproctitle.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/setproctitle.c)
 endif()
 if(NOT HAVE_STRTONUM)
-	list(APPEND SRCS ${IKED_COMPAT}/strtonum.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/strtonum.c)
 endif()
 if(NOT HAVE_FFS)
-	list(APPEND SRCS ${IKED_COMPAT}/ffs.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/ffs.c)
 endif()
 if(NOT HAVE_GETOPT)
-	list(APPEND SRCS ${IKED_COMPAT}/getopt_long.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/getopt_long.c)
 endif()
 if(NOT HAVE_IMSG_H)
-	list(APPEND SRCS
+	list(APPEND CSRCS
 		# imsg
 		${IKED_COMPAT}/imsg.c
 		${IKED_COMPAT}/imsg-buffer.c
 	)
 endif()
 if(NOT HAVE_STRLCPY)
-	list(APPEND SRCS ${IKED_COMPAT}/strlcpy.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/strlcpy.c)
 endif()
 if(NOT HAVE_STRLCAT)
-	list(APPEND SRCS ${IKED_COMPAT}/strlcat.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/strlcat.c)
 endif()
 if(NOT HAVE_FREEZERO)
-	list(APPEND SRCS ${IKED_COMPAT}/freezero.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/freezero.c)
 endif()
 if(NOT HAVE_ARC4RANDOM_BUF)
-	list(APPEND SRCS ${IKED_COMPAT}/arc4random.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/arc4random.c)
 endif()
 if(NOT HAVE_ARC4RANDOM_UNIFORM)
-	list(APPEND SRCS ${IKED_COMPAT}/arc4random_uniform.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/arc4random_uniform.c)
 endif()
 if(NOT HAVE_EXPLICIT_BZERO)
-	list(APPEND SRCS ${IKED_COMPAT}/explicit_bzero.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/explicit_bzero.c)
 endif()
 if(NOT HAVE_REALLOCARRAY)
-	list(APPEND SRCS ${IKED_COMPAT}/reallocarray.c)
+	list(APPEND CSRCS ${IKED_COMPAT}/reallocarray.c)
+endif()
+if(NOT HAVE_VIS)
+	list(APPEND CSRCS ${IKED_COMPAT}/vis.c)
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
@@ -365,6 +374,19 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 	list(APPEND SRCS ipsec.c pfkey.c)
 endif()
+
+add_library(compat OBJECT
+	${CSRCS}
+)
+
+add_library(iked-shared OBJECT
+	ikev2_pld.c
+	imsg_util.c
+	log.c
+	util.c
+	${CMAKE_CURRENT_BINARY_DIR}/ikev2_map.c
+	${CMAKE_CURRENT_BINARY_DIR}/eap_map.c
+)
 
 list(APPEND SRCS
 	ca.c
@@ -378,19 +400,15 @@ list(APPEND SRCS
 	ikev2.c
 	ikev2.h
 	ikev2_msg.c
-	ikev2_pld.c
-	imsg_util.c
-	log.c
 	ocsp.c
 	policy.c
 	proc.c
 	smult_curve25519_ref.c
 	timer.c
-	util.c
 	# Generated files
-	${CMAKE_CURRENT_BINARY_DIR}/ikev2_map.c
-	${CMAKE_CURRENT_BINARY_DIR}/eap_map.c
 	${CMAKE_CURRENT_BINARY_DIR}/parse.c
+	$<TARGET_OBJECTS:compat>
+	$<TARGET_OBJECTS:iked-shared>
 )
 
 add_executable(iked ${SRCS})
@@ -411,7 +429,9 @@ list(APPEND CFLAGS
 	"$<$<CONFIG:DEBUG>:-O0;-g>"
 )
 
+target_compile_options(compat PRIVATE ${CFLAGS})
 target_compile_options(iked PRIVATE ${CFLAGS})
+target_compile_options(iked-shared PRIVATE ${CFLAGS})
 
 set(INC_DIRS
 	${IKED_COMPAT}
@@ -419,11 +439,14 @@ set(INC_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/../iked
 )
 
-target_include_directories(iked
-	PRIVATE ${INC_DIRS}
-)
+target_include_directories(compat PRIVATE ${INC_DIRS})
+target_include_directories(iked PRIVATE ${INC_DIRS})
+target_include_directories(iked-shared PRIVATE ${INC_DIRS})
 
 target_link_libraries(iked
+	PRIVATE util event crypto ssl
+)
+target_link_libraries(iked-shared
 	PRIVATE util event crypto ssl
 )
 
