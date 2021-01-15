@@ -83,19 +83,33 @@ if(NOT HAVE_VIS)
 	list(APPEND CSRCS ${IKED_COMPAT}/vis.c)
 endif()
 
-if(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
-	list(APPEND SRCS ipsec.c pfkey.c)
-elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
-	list(APPEND SRCS ipsec.c pfkey.c)
-elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-	list(APPEND SRCS ipsec-linux.c)
-elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-	list(APPEND SRCS ipsec.c pfkey.c)
-endif()
-
-add_library(compat OBJECT
-	${CSRCS}
+set(CFLAGS)
+list(APPEND CFLAGS
+	-O2
+	-Wall
+	-Wno-pointer-sign
+	-Wno-deprecated-declarations
+	-Wstrict-prototypes
+	-Wmissing-prototypes
+	-Wmissing-declarations
+	-Wshadow
+	-Wpointer-arith
+	-Wcast-qual
+	-Wsign-compare
+	"$<$<CONFIG:DEBUG>:-O0;-g>"
 )
+
+set(INC_DIRS
+	${IKED_COMPAT}
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/../iked
+)
+
+if(CSRCS)
+	add_library(compat OBJECT ${CSRCS})
+	target_compile_options(compat PRIVATE ${CFLAGS})
+	target_include_directories(compat PRIVATE ${INC_DIRS})
+endif()
 
 add_library(iked-shared OBJECT
 	ikev2_pld.c
@@ -105,6 +119,16 @@ add_library(iked-shared OBJECT
 	${CMAKE_CURRENT_BINARY_DIR}/ikev2_map.c
 	${CMAKE_CURRENT_BINARY_DIR}/eap_map.c
 )
+
+if(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
+	list(APPEND SRCS ipsec.c pfkey.c)
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+	list(APPEND SRCS ipsec.c pfkey.c)
+elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+	list(APPEND SRCS ipsec-linux.c)
+elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+	list(APPEND SRCS ipsec.c pfkey.c)
+endif()
 
 list(APPEND SRCS
 	ca.c
@@ -125,39 +149,18 @@ list(APPEND SRCS
 	timer.c
 	# Generated files
 	${CMAKE_CURRENT_BINARY_DIR}/parse.c
-	$<TARGET_OBJECTS:compat>
 	$<TARGET_OBJECTS:iked-shared>
 )
 
+if(TARGET compat)
+	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
+endif()
+
 add_executable(iked ${SRCS})
 
-set(CFLAGS)
-list(APPEND CFLAGS
-	-O2
-	-Wall
-	-Wno-pointer-sign
-	-Wno-deprecated-declarations
-	-Wstrict-prototypes
-	-Wmissing-prototypes
-	-Wmissing-declarations
-	-Wshadow
-	-Wpointer-arith
-	-Wcast-qual
-	-Wsign-compare
-	"$<$<CONFIG:DEBUG>:-O0;-g>"
-)
-
-target_compile_options(compat PRIVATE ${CFLAGS})
 target_compile_options(iked PRIVATE ${CFLAGS})
 target_compile_options(iked-shared PRIVATE ${CFLAGS})
 
-set(INC_DIRS
-	${IKED_COMPAT}
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/../iked
-)
-
-target_include_directories(compat PRIVATE ${INC_DIRS})
 target_include_directories(iked PRIVATE ${INC_DIRS})
 target_include_directories(iked-shared PRIVATE ${INC_DIRS})
 

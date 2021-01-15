@@ -32,8 +32,11 @@ list(APPEND SRCS
 	# iked
 	${CMAKE_CURRENT_SOURCE_DIR}/../iked/log.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../iked/util.c
-	$<TARGET_OBJECTS:compat>
 )
+
+if(TARGET compat)
+	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
+endif()
 
 add_executable(ikectl ${SRCS})
 

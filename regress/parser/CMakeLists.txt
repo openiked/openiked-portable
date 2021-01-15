@@ -12,12 +12,19 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-add_executable(test_parser
+set(SRCS)
+list(APPEND SRCS
 	tests.c
 	common.c
 	test_parser_fuzz.c
 	$<TARGET_OBJECTS:iked-shared>
 )
+
+if(TARGET compat)
+	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
+endif()
+
+add_executable(test_parser ${SRCS})
 
 target_include_directories(test_parser
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../test_helper
