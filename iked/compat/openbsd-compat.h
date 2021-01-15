@@ -244,6 +244,18 @@ typedef int evutil_socket_t;
 #endif
 #endif
 
+#if defined(HAVE_LINUX_PFKEY_H)
+/* Encryption Algorithms */
+#define SADB_X_EALG_AES		SADB_X_EALG_AESCBC
+#define SADB_X_EALG_AESGCM16	SADB_X_EALG_AES_GCM_ICV16
+#define SADB_X_EALG_AESGMAC	SADB_X_EALG_NULL_AES_GMAC
+
+/* Authentication Algorithms */
+#define SADB_X_AALG_SHA2_256	SADB_X_AALG_SHA2_256HMAC
+#define SADB_X_AALG_SHA2_384	SADB_X_AALG_SHA2_384HMAC
+#define SADB_X_AALG_SHA2_512	SADB_X_AALG_SHA2_512HMAC
+#endif
+
 #if !defined(__packed)
 #define __packed	__attribute__((__packed__))
 #endif
