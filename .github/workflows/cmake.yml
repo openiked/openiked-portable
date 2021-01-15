@@ -11,12 +11,15 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build:
+  ubuntu:
     # The CMake configure and build commands are platform agnostic and should work equally
     # well on Windows or Mac.  You can convert this to a matrix build if you need
     # cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, ubuntu-18.04 ]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -48,14 +51,11 @@ jobs:
   macos:
     strategy:
       matrix:
-        os: [ macos-latest]
+        os: [ macos-latest ]
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
-
-    - name: Install libevent
-      run: brew install libevent
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
