@@ -1,0 +1,21 @@
+image: debian/stable
+packages:
+- build-essential
+- cmake
+- libevent-dev
+- bison
+- libssl-dev
+sources:
+- https://github.com/openiked/openiked-portable
+environment:
+  BUILD_TYPE: Release
+  workspace: openiked-portable
+tasks:
+- preconfigure: |
+    cmake -E make_directory $workspace/build
+- configure: |
+    cd $workspace/build
+    cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+- build: |
+    cd $workspace/build
+    cmake --build . --config $BUILD_TYPE
