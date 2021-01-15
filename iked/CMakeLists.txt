@@ -33,7 +33,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	add_definitions(-D_DEFAULT_SOURCE)
 endif()
 
-check_include_files("net/pfkeyv2.h" HAVE_NET_PFKEY_H)
+check_include_files("sys/types.h;net/pfkeyv2.h" HAVE_NET_PFKEY_H)
 if(HAVE_NET_PFKEY_H)
 	add_definitions(-DHAVE_NET_PFKEY_H)
 endif()
