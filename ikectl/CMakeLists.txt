@@ -23,64 +23,8 @@ include(CheckIncludeFiles)
 #include(GNUInstallDirs)
 
 set(IKED_COMPAT		"${CMAKE_CURRENT_SOURCE_DIR}/../iked/compat")
+
 set(SRCS)
-
-if(NOT HAVE_RECALLOCARRAY)
-	list(APPEND SRCS ${IKED_COMPAT}/recallocarray.c)
-endif()
-if(NOT HAVE_SOCK_NONBLOCK)
-	list(APPEND SRCS ${IKED_COMPAT}/bsd-socket.c)
-endif()
-if(NOT HAVE_SETRESUID)
-	list(APPEND SRCS ${IKED_COMPAT}/bsd-setres_id.c)
-endif()
-if(NOT HAVE_GETRTABLE)
-	list(APPEND SRCS ${IKED_COMPAT}/getrtable.c)
-endif()
-if(NOT HAVE_GETDTABLECOUNT)
-	list(APPEND SRCS ${IKED_COMPAT}/getdtablecount.c)
-endif()
-if(NOT HAVE_SETPROCTITLE)
-	list(APPEND SRCS ${IKED_COMPAT}/setproctitle.c)
-endif()
-if(NOT HAVE_STRTONUM)
-	list(APPEND SRCS ${IKED_COMPAT}/strtonum.c)
-endif()
-if(NOT HAVE_FFS)
-	list(APPEND SRCS ${IKED_COMPAT}/ffs.c)
-endif()
-if(NOT HAVE_GETOPT)
-	list(APPEND SRCS ${IKED_COMPAT}/getopt_long.c)
-endif()
-if(NOT HAVE_IMSG_H)
-	list(APPEND SRCS
-		# imsg
-		${IKED_COMPAT}/imsg.c
-		${IKED_COMPAT}/imsg-buffer.c
-	)
-endif()
-if(NOT HAVE_STRLCPY)
-	list(APPEND SRCS ${IKED_COMPAT}/strlcpy.c)
-endif()
-if(NOT HAVE_STRLCAT)
-	list(APPEND SRCS ${IKED_COMPAT}/strlcat.c)
-endif()
-if(NOT HAVE_FREEZERO)
-	list(APPEND SRCS ${IKED_COMPAT}/freezero.c)
-endif()
-if(NOT HAVE_ARC4RANDOM_BUF)
-	list(APPEND SRCS ${IKED_COMPAT}/arc4random.c)
-endif()
-if(NOT HAVE_ARC4RANDOM_UNIFORM)
-	list(APPEND SRCS ${IKED_COMPAT}/arc4random_uniform.c)
-endif()
-if(NOT HAVE_EXPLICIT_BZERO)
-	list(APPEND SRCS ${IKED_COMPAT}/explicit_bzero.c)
-endif()
-if(NOT HAVE_REALLOCARRAY)
-	list(APPEND SRCS ${IKED_COMPAT}/reallocarray.c)
-endif()
-
 list(APPEND SRCS
 	ikeca.c
 	ikectl.c
@@ -88,6 +32,7 @@ list(APPEND SRCS
 	# iked
 	${CMAKE_CURRENT_SOURCE_DIR}/../iked/log.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../iked/util.c
+	$<TARGET_OBJECTS:compat>
 )
 
 add_executable(ikectl ${SRCS})
