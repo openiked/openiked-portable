@@ -194,7 +194,10 @@ struct ibuf *
 ikev2_msg_decrypt(struct iked *env, struct iked_sa *sa,
     struct ibuf *msg, struct ibuf *src)
 {
-	ASSERT_PTR_NE(src, NULL);
+	if (src == NULL){
+                fprintf(stderr, "%s\n", "msg_decrypt: src == NULL!");
+                exit(-1);
+        }
 
 	/*
 	 * Free src as caller uses ikev2_msg_decrypt() like this:
