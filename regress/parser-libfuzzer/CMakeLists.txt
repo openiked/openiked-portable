@@ -12,22 +12,36 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+set(CMAKE_C_COMPILER clang)
+
+# address-sanitizer not working on OpenBSD
+set(CMAKE_C_FLAGS "-g -O1 -fsanitize=fuzzer,address")
+set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=fuzzer,address")
+
 set(SRCS)
 list(APPEND SRCS
-	test_helper.c
+	common.c
+	test_parser_fuzz.c
+	$<TARGET_OBJECTS:iked-shared>
 )
-
-if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
-	list (APPEND SRCS fuzz.c)
-endif()
 
 if(TARGET compat)
 	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
 endif()
 
-add_library(test_helper ${SRCS})
+add_executable(test_parser ${SRCS})
 
-target_include_directories(test_helper
-	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../iked/compat
+target_include_directories(test_parser
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked/compat
 )
+
+target_link_libraries(test_parser
+	PRIVATE util event crypto ssl
+)
+
+target_compile_options(test_parser PRIVATE ${CFLAGS})
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/corpus)
+configure_file(run_test.sh run_test.sh COPYONLY)
+configure_file(fuzz.dict fuzz.dict COPYONLY)
