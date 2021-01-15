@@ -789,8 +789,11 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	sa_dst.sadb_address_exttype = SADB_EXT_ADDRESS_DST;
 
 	bzero(&sa_pxy, sizeof(sa_pxy));
-	sa_pxy.sadb_address_len = (sizeof(sa_pxy) + ROUNDUP(SS_LEN(spxy))) / 8;
-	sa_pxy.sadb_address_exttype = SADB_EXT_ADDRESS_PROXY;
+	if (dst != sa->csa_peer) {
+		sa_pxy.sadb_address_len =
+		    (sizeof(sa_pxy) + ROUNDUP(SS_LEN(spxy))) / 8;
+		sa_pxy.sadb_address_exttype = SADB_EXT_ADDRESS_PROXY;
+	}
 
 	bzero(&sa_authkey, sizeof(sa_authkey));
 	bzero(&sa_enckey, sizeof(sa_enckey));
@@ -1015,7 +1018,7 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	smsg.sadb_msg_len += sa_dst.sadb_address_len;
 	iov_cnt++;
 
-	if (SS_LEN(spxy)) {
+	if (dst != sa->csa_peer) {
 		/* pxy addr */
 		iov[iov_cnt].iov_base = &sa_pxy;
 		iov[iov_cnt].iov_len = sizeof(sa_pxy);
