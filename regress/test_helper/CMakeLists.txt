@@ -12,11 +12,17 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-add_library(test_helper
+set(SRCS)
+list(APPEND SRCS
 	test_helper.c
 	fuzz.c
-	$<TARGET_OBJECTS:compat>
 )
+
+if(TARGET compat)
+	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
+endif()
+
+add_library(test_helper ${SRCS})
 
 target_include_directories(test_helper
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
