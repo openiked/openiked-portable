@@ -12,18 +12,21 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-cmake_minimum_required(VERSION 3.10)
+add_executable(test_parser
+	tests.c
+	common.c
+	test_parser_fuzz.c
+	$<TARGET_OBJECTS:iked-shared>
+)
 
-project(openiked)
+target_include_directories(test_parser
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../test_helper
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked/compat
+)
 
-include_directories("/usr/local/include")
-link_directories("/usr/local/lib")
-if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-	include_directories("/usr/local/opt/openssl@1.1/include")
-	link_directories("/usr/local/opt/openssl@1.1/lib")
-endif()
+target_link_libraries(test_parser
+	PRIVATE util event crypto ssl test_helper
+)
 
-add_subdirectory(iked)
-add_subdirectory(ikectl)
-add_subdirectory(regress/parser)
-add_subdirectory(regress/test_helper)
+target_compile_options(test_parser PRIVATE ${CFLAGS})
