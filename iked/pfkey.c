@@ -793,6 +793,12 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	bzero(&sa_ltime_hard, sizeof(sa_ltime_hard));
 	bzero(&sa_ltime_soft, sizeof(sa_ltime_soft));
 
+#ifdef SADB_X_EXT_UDPENCAP
+	bzero(&udpencap, sizeof udpencap);
+#else
+	bzero(&nat_type, sizeof(nat_type));
+#endif
+
 #ifdef SADB_X_EXT_RDOMAIN
 	if (pol->pol_rdomain >= 0) {
 		bzero(&sa_rdomain, sizeof(sa_rdomain));
@@ -819,7 +825,6 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	if (satype == SADB_SATYPE_ESP &&
 	    sa->csa_ikesa->sa_udpencap && sa->csa_ikesa->sa_natt) {
 #ifdef SADB_X_EXT_UDPENCAP
-		bzero(&udpencap, sizeof udpencap);
 		sadb.sadb_sa_flags |= SADB_X_SAFLAGS_UDPENCAP;
 		udpencap.sadb_x_udpencap_exttype = SADB_X_EXT_UDPENCAP;
 		udpencap.sadb_x_udpencap_len = sizeof(udpencap) / 8;
@@ -829,7 +834,6 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		log_debug("%s: udpencap port %d", __func__,
 		    ntohs(udpencap.sadb_x_udpencap_port));
 #else
-		bzero(&nat_type, sizeof(nat_type));
 		nat_type.sadb_x_nat_t_type_len = sizeof(nat_type) / 8;
 		nat_type.sadb_x_nat_t_type_exttype = SADB_X_EXT_NAT_T_TYPE;
 		nat_type.sadb_x_nat_t_type_type = UDP_ENCAP_ESPINUDP;
