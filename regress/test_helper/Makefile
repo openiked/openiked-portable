@@ -1,7 +1,7 @@
 #	$OpenBSD: Makefile,v 1.1 2017/05/29 20:59:32 markus Exp $
 
 LIB=	test_helper
-SRCS=	test_helper.c fuzz.c
+SRCS=	test_helper.c
 
 DEBUGLIBS= no
 NOPROFILE= yes

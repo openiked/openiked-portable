@@ -16,7 +16,6 @@
 
 #include "iked.h"
 #include "types.h"
-#include "test_helper.h"
 
 int	 eap_parse(struct iked *, const struct iked_sa *,
 	    struct iked_message *, void *, int);
