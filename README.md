@@ -1,6 +1,7 @@
 # Portable OpenIKED
 
 [![CMake](https://github.com/openiked/openiked-portable/workflows/CMake/badge.svg)](https://github.com/openiked/openiked-portable/actions?query=workflow%3ACMake)
+[![builds.sr.ht status](https://builds.sr.ht/~mbuhl/openiked-portable.svg)](https://builds.sr.ht/~mbuhl/openiked-portable?)
 
 This is a port of OpenBSD's [OpenIKED](https://openiked.org) to different
 Unix-like operating systems, including Linux, macOS and FreeBSD.
