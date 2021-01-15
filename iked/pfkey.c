@@ -273,7 +273,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 		    __func__, flow_src->addr_af);
 		return (-1);
 	}
-	SS_LEN(smask) = SS_LEN(ssrc);
+	smask.ss_len = ssrc.ss_len;
 
 	bzero(&sdst, sizeof(sdst));
 	bzero(&dmask, sizeof(dmask));
@@ -300,7 +300,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 		    __func__, flow_dst->addr_af);
 		return (-1);
 	}
-	SS_LEN(dmask) = SS_LEN(sdst);
+	dmask.ss_len = sdst.ss_len;
 
 	bzero(&slocal, sizeof(slocal));
 	bzero(&speer, sizeof(speer));
@@ -334,34 +334,34 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 
 	bzero(&sa_src, sizeof(sa_src));
 	sa_src.sadb_address_exttype = SADB_X_EXT_SRC_FLOW;
-	sa_src.sadb_address_len = (sizeof(sa_src) + ROUNDUP(SS_LEN(ssrc))) / 8;
+	sa_src.sadb_address_len = (sizeof(sa_src) + ROUNDUP(ssrc.ss_len)) / 8;
 
 	bzero(&sa_smask, sizeof(sa_smask));
 	sa_smask.sadb_address_exttype = SADB_X_EXT_SRC_MASK;
 	sa_smask.sadb_address_len =
-	    (sizeof(sa_smask) + ROUNDUP(SS_LEN(smask))) / 8;
+	    (sizeof(sa_smask) + ROUNDUP(smask.ss_len)) / 8;
 
 	bzero(&sa_dst, sizeof(sa_dst));
 	sa_dst.sadb_address_exttype = SADB_X_EXT_DST_FLOW;
-	sa_dst.sadb_address_len = (sizeof(sa_dst) + ROUNDUP(SS_LEN(sdst))) / 8;
+	sa_dst.sadb_address_len = (sizeof(sa_dst) + ROUNDUP(sdst.ss_len)) / 8;
 
 	bzero(&sa_dmask, sizeof(sa_dmask));
 	sa_dmask.sadb_address_exttype = SADB_X_EXT_DST_MASK;
 	sa_dmask.sadb_address_len =
-	    (sizeof(sa_dmask) + ROUNDUP(SS_LEN(dmask))) / 8;
+	    (sizeof(sa_dmask) + ROUNDUP(dmask.ss_len)) / 8;
 
 	if (action != SADB_X_DELFLOW && flow->flow_local != NULL) {
 		/* local address */
 		bzero(&sa_local, sizeof(sa_local));
 		sa_local.sadb_address_exttype = SADB_EXT_ADDRESS_SRC;
 		sa_local.sadb_address_len =
-		    (sizeof(sa_local) + ROUNDUP(SS_LEN(slocal))) / 8;
+		    (sizeof(sa_local) + ROUNDUP(slocal.ss_len)) / 8;
 
 		/* peer address */
 		bzero(&sa_peer, sizeof(sa_peer));
 		sa_peer.sadb_address_exttype = SADB_EXT_ADDRESS_DST;
 		sa_peer.sadb_address_len =
-		    (sizeof(sa_peer) + ROUNDUP(SS_LEN(speer))) / 8;
+		    (sizeof(sa_peer) + ROUNDUP(speer.ss_len)) / 8;
 
 		/* local id */
 		sa_srcid = pfkey_id2ident(IKESA_SRCID(flow->flow_ikesa),
@@ -401,7 +401,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 		iov[iov_cnt].iov_len = sizeof(sa_peer);
 		iov_cnt++;
 		iov[iov_cnt].iov_base = &speer;
-		iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(speer));
+		iov[iov_cnt].iov_len = ROUNDUP(speer.ss_len);
 		smsg.sadb_msg_len += sa_peer.sadb_address_len;
 		iov_cnt++;
 	}
@@ -411,7 +411,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	iov[iov_cnt].iov_len = sizeof(sa_src);
 	iov_cnt++;
 	iov[iov_cnt].iov_base = &ssrc;
-	iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(ss_len));
+	iov[iov_cnt].iov_len = ROUNDUP(ssrc.ss_len);
 	smsg.sadb_msg_len += sa_src.sadb_address_len;
 	iov_cnt++;
 
@@ -420,7 +420,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	iov[iov_cnt].iov_len = sizeof(sa_smask);
 	iov_cnt++;
 	iov[iov_cnt].iov_base = &smask;
-	iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(smask));
+	iov[iov_cnt].iov_len = ROUNDUP(smask.ss_len);
 	smsg.sadb_msg_len += sa_smask.sadb_address_len;
 	iov_cnt++;
 
@@ -429,7 +429,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	iov[iov_cnt].iov_len = sizeof(sa_dst);
 	iov_cnt++;
 	iov[iov_cnt].iov_base = &sdst;
-	iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(sdst));
+	iov[iov_cnt].iov_len = ROUNDUP(sdst.ss_len);
 	smsg.sadb_msg_len += sa_dst.sadb_address_len;
 	iov_cnt++;
 
@@ -438,7 +438,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	iov[iov_cnt].iov_len = sizeof(sa_dmask);
 	iov_cnt++;
 	iov[iov_cnt].iov_base = &dmask;
-	iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(dmask));
+	iov[iov_cnt].iov_len = ROUNDUP(dmask.ss_len);
 	smsg.sadb_msg_len += sa_dmask.sadb_address_len;
 	iov_cnt++;
 
@@ -1209,11 +1209,13 @@ pfkey_sa_lookup(int sd, struct iked_childsa *sa, uint64_t *last_used)
 #endif
 
 	bzero(&sa_src, sizeof(sa_src));
-	sa_src.sadb_address_len = (sizeof(sa_src) + ROUNDUP(SS_LEN(ssrc))) / 8;
+	sa_src.sadb_address_len =
+	    (sizeof(sa_src) + ROUNDUP(SS_LEN(ssrc))) / 8;
 	sa_src.sadb_address_exttype = SADB_EXT_ADDRESS_SRC;
 
 	bzero(&sa_dst, sizeof(sa_dst));
-	sa_dst.sadb_address_len = (sizeof(sa_dst) + ROUNDUP(SS_LEN(sdst))) / 8;
+	sa_dst.sadb_address_len =
+	    (sizeof(sa_dst) + ROUNDUP(SS_LEN(sdst))) / 8;
 	sa_dst.sadb_address_exttype = SADB_EXT_ADDRESS_DST;
 
 	iov_cnt = 0;
@@ -1344,11 +1346,13 @@ pfkey_sa_getspi(int sd, uint8_t satype, struct iked_childsa *sa,
 	sa_spirange.sadb_spirange_reserved = 0;
 
 	bzero(&sa_src, sizeof(sa_src));
-	sa_src.sadb_address_len = (sizeof(sa_src) + ROUNDUP(SS_LEN(ssrc))) / 8;
+	sa_src.sadb_address_len =
+	    (sizeof(sa_src) + ROUNDUP(SS_LEN(ssrc))) / 8;
 	sa_src.sadb_address_exttype = SADB_EXT_ADDRESS_SRC;
 
 	bzero(&sa_dst, sizeof(sa_dst));
-	sa_dst.sadb_address_len = (sizeof(sa_dst) + ROUNDUP(SS_LEN(sdst))) / 8;
+	sa_dst.sadb_address_len =
+	    (sizeof(sa_dst) + ROUNDUP(SS_LEN(sdst))) / 8;
 	sa_dst.sadb_address_exttype = SADB_EXT_ADDRESS_DST;
 
 	iov_cnt = 0;
