@@ -200,7 +200,15 @@ udp_bind(struct sockaddr *sa, in_port_t port)
 	}
 
 	if (sa->sa_family == AF_INET) {
-#ifdef IP_RECVDSTADDR
+#if defined(IP_RECVORIGDSTADDR)
+		val = 1;
+		if (setsockopt(s, IPPROTO_IP, IP_RECVORIGDSTADDR,
+		    &val, sizeof(int)) == -1) {
+			log_warn("%s: failed to set IPv4 packet info",
+			    __func__);
+			goto bad;
+		}
+#elif defined(IP_RECVDSTADDR)
 		val = 1;
 		if (setsockopt(s, IPPROTO_IP, IP_RECVDSTADDR,
 		    &val, sizeof(int)) == -1) {
@@ -366,7 +374,7 @@ recvfromto(int s, void *buf, size_t len, int flags, struct sockaddr *from,
 	struct iovec		 iov;
 	struct msghdr		 msg;
 	struct cmsghdr		*cmsg;
-#ifdef IP_RECVDSTADDR
+#if defined(IP_RECVDSTADDR) || defined(IP_RECVORIGDSTADDR)
 	struct sockaddr_in	*in;
 #endif
 #ifdef IPV6_PKTINFO
@@ -403,7 +411,13 @@ recvfromto(int s, void *buf, size_t len, int flags, struct sockaddr *from,
 	    cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 		switch (from->sa_family) {
 		case AF_INET:
-#ifdef IP_RECVDSTADDR
+#if defined(IP_RECVORIGDSTADDR)
+			if (cmsg->cmsg_level == IPPROTO_IP &&
+			    cmsg->cmsg_type == IP_RECVORIGDSTADDR) {
+				memcpy(to, CMSG_DATA(cmsg),
+				    sizeof(struct sockaddr_in));
+			}
+#elif defined(IP_RECVDSTADDR)
 			if (cmsg->cmsg_level == IPPROTO_IP &&
 			    cmsg->cmsg_type == IP_RECVDSTADDR) {
 				in = (struct sockaddr_in *)to;
@@ -414,7 +428,7 @@ recvfromto(int s, void *buf, size_t len, int flags, struct sockaddr *from,
 				memcpy(&in->sin_addr, CMSG_DATA(cmsg),
 				    sizeof(struct in_addr));
 			}
-#endif
+#endif /* defined(IP_RECVDSTADDR) */
 			break;
 		case AF_INET6:
 #ifdef IPV6_PKTINFO
