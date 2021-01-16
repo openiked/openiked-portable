@@ -14,6 +14,8 @@ The official documentation for OpenIKED are the man pages for each tool:
 * [ikectl(8)](https://man.openbsd.org/ikectl.8)
 * [iked.conf(5)](https://man.openbsd.org/iked.conf.5)
 
+and the [OpenBSD VPN FAQ](https://www.openbsd.org/faq/faq17.html).
+
 ## Building Portable OpenIKED
 
 ### Dependencies
