@@ -24,6 +24,20 @@
 
 #include <netinet/in.h>
 
+#ifdef HAVE_NET_IPSEC_H
+#include <sys/types.h>
+#include <netipsec/ipsec.h>
+#endif
+#ifdef HAVE_LINUX_IPSEC_H
+#include <linux/ipsec.h>
+#endif
+#ifdef HAVE_NETINET6_IPSEC_H
+#include <netinet6/ipsec.h>
+#endif
+#ifdef HAVE_IPSP_H
+#include <netinet/ip_ipsp.h>
+#endif
+
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -108,7 +122,7 @@ socket_getaddr(int s, struct sockaddr_storage *ss)
 int
 socket_bypass(int s, struct sockaddr *sa)
 {
-#ifdef IPSEC_LEVEL_BYPASS
+#if defined(__OpenBSD__)
 	int	 v, *a;
 	int	 a4[] = {
 		    IPPROTO_IP,
@@ -160,8 +174,47 @@ socket_bypass(int s, struct sockaddr *sa)
 		return (-1);
 	}
 #endif
+#else /* __OpenBSD__ */
+	int	*a;
+	int	 a4[] = {
+		    IPPROTO_IP,
+		    IP_IPSEC_POLICY
+	};
+	int	 a6[] = {
+		    IPPROTO_IPV6,
+		    IPV6_IPSEC_POLICY,
+	};
+	struct sadb_x_policy pol = {
+		    SADB_UPDATE,
+		    SADB_EXT_SENSITIVITY,
+		    IPSEC_POLICY_BYPASS,
+		    0, 0, 0, 0
+	};
 
-#endif /* IPSEC_LEVEL_BYPASS */
+	switch (sa->sa_family) {
+	case AF_INET:
+		a = a4;
+		break;
+	case AF_INET6:
+		a = a6;
+		break;
+	default:
+		log_warn("%s: invalid address family", __func__);
+		return (-1);
+	}
+
+	pol.sadb_x_policy_dir = IPSEC_DIR_INBOUND;
+	if (setsockopt(s, a[0], a[1], &pol, sizeof(pol)) == -1) {
+		log_warn("%s: IPSEC_DIR_INBOUND", __func__);
+		return (-1);
+	}
+	pol.sadb_x_policy_dir = IPSEC_DIR_OUTBOUND;
+	if (setsockopt(s, a[0], a[1], &pol, sizeof(pol)) == -1) {
+		log_warn("%s: IPSEC_DIR_OUTBOUND", __func__);
+		return (-1);
+	}
+#endif /* !__OpenBSD__ */
+
 	return (0);
 }
 
