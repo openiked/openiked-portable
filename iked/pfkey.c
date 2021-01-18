@@ -26,19 +26,7 @@
 #include <sys/socket.h>
 
 #include <netinet/in.h>
-#ifdef HAVE_NET_IPSEC_H
-#include <sys/types.h>
-#include <netipsec/ipsec.h>
-#endif
-#ifdef HAVE_LINUX_IPSEC_H
-#include <linux/ipsec.h>
-#endif
-#ifdef HAVE_NETINET6_IPSEC_H
-#include <netinet6/ipsec.h>
-#endif
-#ifdef HAVE_IPSP_H
 #include <netinet/ip_ipsp.h>
-#endif
 #if defined(HAVE_NET_PFKEY_H)
 #include <net/pfkeyv2.h>
 #elif defined(HAVE_LINUX_PFKEY_H)
