@@ -24,18 +24,7 @@
 #include <sys/uio.h>
 
 #include <netinet/in.h>
-#ifdef HAVE_NET_IPSEC_H
-#include <netipsec/ipsec.h>
-#endif
-#ifdef HAVE_NETINET6_IPSEC_H
-#include <netinet6/ipsec.h>
-#endif
-#ifdef HAVE_LINUX_IPSEC_H
-#include <linux/ipsec.h>
-#endif
-#ifdef HAVE_IPSP_H
 #include <netinet/ip_ipsp.h>
-#endif
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 

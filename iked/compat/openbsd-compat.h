@@ -234,16 +234,6 @@ typedef int evutil_socket_t;
 #define SADB_X_FLOW_TYPE_DENY	1
 #endif
 
-#if !defined HAVE_IPSP_H && (defined HAVE_NET_IPSEC_H || \
-    defined HAVE_LINUX_IPSEC_H || defined HAVE_NETINET6_IPSEC_H)
-#if !defined(IPSP_DIRECTION_IN)
-#define IPSP_DIRECTION_IN	IPSEC_DIR_INBOUND
-#endif
-#if !defined(IPSP_DIRECTION_OUT)
-#define IPSP_DIRECTION_OUT	IPSEC_DIR_OUTBOUND
-#endif
-#endif
-
 #if defined(HAVE_LINUX_PFKEY_H)
 /* Encryption Algorithms */
 #define SADB_X_EALG_AES		SADB_X_EALG_AESCBC
