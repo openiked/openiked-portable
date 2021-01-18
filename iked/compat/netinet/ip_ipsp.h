@@ -15,7 +15,7 @@
  */
 
 #ifdef HAVE_IPSP_H
-#include_next "ip/ipsp.h"
+#include_next "netinet/ip_ipsp.h"
 #else
 
 #ifdef HAVE_NET_IPSEC_H
