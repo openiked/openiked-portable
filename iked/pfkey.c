@@ -108,13 +108,14 @@ static const struct pfkey_constmap pfkey_encr[] = {
 static const struct pfkey_constmap pfkey_integr[] = {
 	{ SADB_AALG_MD5HMAC,	IKEV2_XFORMAUTH_HMAC_MD5_96 },
 	{ SADB_AALG_SHA1HMAC,	IKEV2_XFORMAUTH_HMAC_SHA1_96 },
-#ifdef SADB_X_AALG_SHA2_256
+	/* XXX: Linux uses a non-standard truncated SHA256 with pfkey */
+#if defined(SADB_X_AALG_SHA2_256) && !defined(HAVE_LINUX_PFKEY_H)
 	{ SADB_X_AALG_SHA2_256,	IKEV2_XFORMAUTH_HMAC_SHA2_256_128 },
 #endif
-#ifdef SADB_X_AALG_SHA2_384
+#if defined(SADB_X_AALG_SHA2_384)
 	{ SADB_X_AALG_SHA2_384,	IKEV2_XFORMAUTH_HMAC_SHA2_384_192 },
 #endif
-#ifdef SADB_X_AALG_SHA2_512
+#if defined(SADB_X_AALG_SHA2_512)
 	{ SADB_X_AALG_SHA2_512,	IKEV2_XFORMAUTH_HMAC_SHA2_512_256 },
 #endif
 	{ 0 }
@@ -764,10 +765,15 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	    IPSEC_MODE_TUNNEL;
 #endif
 
+	if (sa->csa_esn) {
 #ifdef SADB_X_SAFLAGS_ESN
-	if (sa->csa_esn)
 		sadb.sadb_sa_flags |= SADB_X_SAFLAGS_ESN;
+#else
+		log_warnx("%s: kernel has no support for"
+		    " extended sequence numbers (ESN)", __func__);
+		return (-1);
 #endif
+	}
 
 	bzero(&sa_src, sizeof(sa_src));
 	sa_src.sadb_address_len = (sizeof(sa_src) + ROUNDUP(SS_LEN(ssrc))) / 8;

@@ -188,11 +188,16 @@ struct iked_transform ikev2_default_esp_transforms[] = {
 	{ IKEV2_XFORMTYPE_ENCR, IKEV2_XFORMENCR_AES_CBC, 256 },
 	{ IKEV2_XFORMTYPE_ENCR, IKEV2_XFORMENCR_AES_CBC, 192 },
 	{ IKEV2_XFORMTYPE_ENCR, IKEV2_XFORMENCR_AES_CBC, 128 },
+	/* XXX: Linux uses a non-standard truncated SHA256 with pfkey */
+#if !defined(HAVE_LINUX_PFKEY_H)
 	{ IKEV2_XFORMTYPE_INTEGR, IKEV2_XFORMAUTH_HMAC_SHA2_256_128 },
+#endif
 	{ IKEV2_XFORMTYPE_INTEGR, IKEV2_XFORMAUTH_HMAC_SHA2_384_192 },
 	{ IKEV2_XFORMTYPE_INTEGR, IKEV2_XFORMAUTH_HMAC_SHA2_512_256 },
 	{ IKEV2_XFORMTYPE_INTEGR, IKEV2_XFORMAUTH_HMAC_SHA1_96 },
+#ifdef SADB_X_SAFLAGS_ESN
 	{ IKEV2_XFORMTYPE_ESN,	IKEV2_XFORMESN_ESN },
+#endif
 	{ IKEV2_XFORMTYPE_ESN,	IKEV2_XFORMESN_NONE },
 	{ 0 }
 };
@@ -2936,6 +2941,8 @@ create_ike(char *name, int af, uint8_t ipproto,
 	}
 
 	if (ipsec_sa == NULL || ipsec_sa->nxfs == 0) {
+	/* XXX: Linux pfkey does not support AES-GCM */
+#if !defined(HAVE_LINUX_PFKEY_H)
 		if ((p = calloc(1, sizeof(*p))) == NULL)
 			err(1, "%s", __func__);
 		p->prop_id = ipsecpropid++;
@@ -2944,6 +2951,7 @@ create_ike(char *name, int af, uint8_t ipproto,
 		p->prop_xforms = ikev2_default_esp_transforms_noauth;
 		TAILQ_INSERT_TAIL(&pol.pol_proposals, p, prop_entry);
 		pol.pol_nproposals++;
+#endif
 
 		if ((p = calloc(1, sizeof(*p))) == NULL)
 			err(1, "%s", __func__);
