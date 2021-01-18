@@ -32,6 +32,10 @@
 #include <event.h>
 #include <imsg.h>
 
+#if HAVE_GRP_H
+#include <grp.h>
+#endif
+
 #include "iked.h"
 
 enum privsep_procid privsep_process;

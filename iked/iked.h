@@ -372,7 +372,7 @@ struct iked_kex {
 	struct ibuf			*kex_inonce;	/* Ni */
 	struct ibuf			*kex_rnonce;	/* Nr */
 
-	struct group			*kex_dhgroup;	/* DH group */
+	struct dh_group			*kex_dhgroup;	/* DH group */
 	struct ibuf			*kex_dhiexchange;
 	struct ibuf			*kex_dhrexchange;
 	struct ibuf			*kex_dhpeer;	/* pointer to i or r */
