@@ -818,7 +818,7 @@ host_spec	: STRING			{
 		| STRING '/' NUMBER		{
 			char	*buf;
 
-			if (asprintf(&buf, "%s/%lld", $1, $3) == -1)
+			if (asprintf(&buf, "%s/%lld", $1, (long long)$3) == -1)
 				err(1, "host: asprintf");
 			free($1);
 			if (($$ = host(buf)) == NULL)	{
@@ -1099,7 +1099,8 @@ byte_spec	: NUMBER			{
 			uint64_t	 bytes = 0;
 			char		 unit = 0;
 
-			if (sscanf($1, "%llu%c", &bytes, &unit) != 2) {
+			if (sscanf($1, "%llu%c", (long long unsigned *)&bytes,
+			    &unit) != 2) {
 				yyerror("invalid byte specification: %s", $1);
 				YYERROR;
 			}
@@ -1129,7 +1130,8 @@ time_spec	: NUMBER			{
 			uint64_t	 seconds = 0;
 			char		 unit = 0;
 
-			if (sscanf($1, "%llu%c", &seconds, &unit) != 2) {
+			if (sscanf($1, "%llu%c", (long long unsigned *)&seconds,
+			    &unit) != 2) {
 				yyerror("invalid time specification: %s", $1);
 				YYERROR;
 			}
@@ -2608,7 +2610,8 @@ print_policy(struct iked_policy *pol)
 		print_verbose(" ikelifetime %u", pol->pol_rekey);
 
 	print_verbose(" lifetime %llu bytes %llu",
-	    pol->pol_lifetime.lt_seconds, pol->pol_lifetime.lt_bytes);
+	    (long long unsigned)pol->pol_lifetime.lt_seconds,
+	    (long long unsigned)pol->pol_lifetime.lt_bytes);
 
 	switch (pol->pol_auth.auth_method) {
 	case IKEV2_AUTH_NONE:

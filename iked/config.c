@@ -874,7 +874,8 @@ config_getstatic(struct iked *env, struct imsg *imsg)
 	IMSG_SIZE_CHECK(imsg, &env->sc_static);
 	memcpy(&env->sc_static, imsg->data, sizeof(env->sc_static));
 
-	log_debug("%s: dpd_check_interval %llu", __func__, env->sc_alive_timeout);
+	log_debug("%s: dpd_check_interval %llu", __func__,
+	    (long long unsigned)env->sc_alive_timeout);
 	log_debug("%s: %senforcesingleikesa", __func__,
 	    env->sc_enforcesingleikesa ? "" : "no ");
 	log_debug("%s: %sfragmentation", __func__, env->sc_frag ? "" : "no ");
