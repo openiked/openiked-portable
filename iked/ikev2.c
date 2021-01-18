@@ -4833,7 +4833,8 @@ ikev2_ike_sa_alive(struct iked *env, void *arg)
 		log_debug("%s: %s CHILD SA spi %s last used %llu second(s) ago",
 		    __func__,
 		    csa->csa_dir == IPSP_DIRECTION_IN ? "incoming" : "outgoing",
-		    print_spi(csa->csa_spi.spi, csa->csa_spi.spi_size), diff);
+		    print_spi(csa->csa_spi.spi, csa->csa_spi.spi_size),
+		    (long long unsigned)diff);
 		if (diff < env->sc_alive_timeout) {
 			if (csa->csa_dir == IPSP_DIRECTION_IN) {
 				foundin = 1;
@@ -4850,7 +4851,8 @@ ikev2_ike_sa_alive(struct iked *env, void *arg)
 		log_debug("%s: IKE SA %p ispi %s rspi %s last received %llu"
 		    " second(s) ago", __func__, sa,
 		    print_spi(sa->sa_hdr.sh_ispi, 8),
-		    print_spi(sa->sa_hdr.sh_rspi, 8), diff);
+		    print_spi(sa->sa_hdr.sh_rspi, 8),
+		    (long long unsigned)diff);
 	}
 
 	/*
