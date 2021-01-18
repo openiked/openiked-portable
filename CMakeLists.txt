@@ -63,6 +63,11 @@ if(HAVE_DIRENT_H)
 	add_definitions(-DHAVE_DIRENT_H)
 endif()
 
+check_include_files(grp.h HAVE_GRP_H)
+if(HAVE_GRP_H)
+	add_definitions(-DHAVE_GRP_H)
+endif()
+
 check_include_files("sys/socket.h;netinet/ip_ipsp.h" HAVE_IPSP_H)
 if(HAVE_IPSP_H)
 	add_definitions(-DHAVE_IPSP_H)

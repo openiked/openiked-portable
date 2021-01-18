@@ -32,7 +32,7 @@ int	 sa_stateok(const struct iked_sa *, int);
 void	 sa_state(struct iked *, struct iked_sa *, int);
 void	 ikev2_disable_rekeying(struct iked *, struct iked_sa *);
 void	 ikev2_init_ike_sa(struct iked *, void *);
-struct group *
+struct dh_group *
 	 group_get(u_int32_t);
 void	 timer_set(struct iked *, struct iked_timer *,
 	     void (*)(struct iked *, void *), void *);
