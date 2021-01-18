@@ -692,6 +692,7 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 #endif
 #ifdef SADB_X_EXT_TAP
 	struct sadb_x_tap	 sa_tap;
+	int			 dotap = 0;
 #endif
 #ifdef SADB_X_EXT_RDOMAIN
 	struct sadb_x_rdomain	 sa_rdomain;
@@ -707,7 +708,7 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 	struct iovec		 iov[IOV_CNT];
 	uint32_t		 jitter;
 	int			 iov_cnt;
-	int			 ret, dotap = 0;
+	int			 ret;
 
 	sa_srcid = sa_dstid = NULL;
 
@@ -1150,19 +1151,22 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 int
 pfkey_sa_lookup(int sd, struct iked_childsa *sa, uint64_t *last_used)
 {
-	struct iked_policy	*pol = sa->csa_ikesa->sa_policy;
 	struct sadb_msg		*msg, smsg;
 	struct sadb_address	 sa_src, sa_dst;
 	struct sadb_sa		 sadb;
 #ifdef SADB_X_EXT_RDOMAIN
+	struct iked_policy	*pol = sa->csa_ikesa->sa_policy;
 	struct sadb_x_rdomain	 sa_rdomain;
+	int rdomain;
 #endif
+#ifdef SADB_X_EXT_LIFETIME_LASTUSE
 	struct sadb_lifetime	*sa_life;
+#endif
 	struct sockaddr_storage	 ssrc, sdst;
 	struct iovec		 iov[IOV_CNT];
 	uint8_t			*data;
 	ssize_t			 n;
-	int			 iov_cnt, ret = -1, rdomain;
+	int			 iov_cnt, ret = -1;
 	uint8_t			 satype;
 
 	if (last_used)
