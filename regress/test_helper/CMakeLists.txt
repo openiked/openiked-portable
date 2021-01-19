@@ -15,7 +15,6 @@
 set(SRCS)
 list(APPEND SRCS
 	test_helper.c
-	fuzz.c
 )
 
 if(TARGET compat)
