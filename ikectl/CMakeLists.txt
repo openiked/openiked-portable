@@ -68,4 +68,4 @@ target_link_libraries(ikectl
 	PRIVATE util event crypto ssl
 )
 
-install(TARGETS ikectl RUNTIME DESTINATION bin)
+install(TARGETS ikectl RUNTIME DESTINATION sbin)

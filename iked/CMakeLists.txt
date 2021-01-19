@@ -193,4 +193,4 @@ add_custom_command(
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmap.sh
 )
 
-install(TARGETS iked RUNTIME DESTINATION bin)
+install(TARGETS iked RUNTIME DESTINATION sbin)
