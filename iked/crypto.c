@@ -1159,13 +1159,13 @@ _dsa_verify_prepare(struct iked_dsa *dsa, uint8_t **sigp, size_t *lenp,
 			goto done;
 		bnlen = (*lenp)/2;
 		/* sigp points to concatenation: r|s */
-		if ((obj = ECDSA_SIG_new()) == NULL)
-			goto done;
-		if ((r = BN_bin2bn(*sigp, bnlen, NULL)) == NULL ||
+		if ((obj = ECDSA_SIG_new()) == NULL ||
+		    (r = BN_bin2bn(*sigp, bnlen, NULL)) == NULL ||
 		    (s = BN_bin2bn(*sigp+bnlen, bnlen, NULL)) == NULL ||
+		    ECDSA_SIG_set0(obj, r, s) == 0 ||
 		    (len = i2d_ECDSA_SIG(obj, &ptr)) == 0)
 			goto done;
-		ECDSA_SIG_set0(obj, r, s);
+		r = s = NULL;
 		*lenp = len;
 		*sigp = ptr;
 		*freemep = ptr;
