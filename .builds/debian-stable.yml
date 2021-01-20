@@ -19,3 +19,9 @@ tasks:
 - build: |
     cd $workspace/build
     cmake --build . --config $BUILD_TYPE
+- test-dh: |
+    cd $workspace/build/regress/dh
+    ./dhtest
+- test-parser: |
+    cd $workspace/build/regress/parser
+    ./test_parser
