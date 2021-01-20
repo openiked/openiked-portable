@@ -56,7 +56,7 @@ main(void)
 	struct ibuf *buf, *buf2;
 	struct ibuf *sec, *sec2;
 	uint8_t *raw, *raw2;
-	struct group *group, *group2;
+	struct dh_group *group, *group2;
 	const char *name[] = { "MODP", "ECP", "CURVE25519" };
 
 	group_init();

@@ -316,5 +316,6 @@ endif()
 
 add_subdirectory(iked)
 add_subdirectory(ikectl)
+add_subdirectory(regress/dh)
 add_subdirectory(regress/parser)
 add_subdirectory(regress/test_helper)
