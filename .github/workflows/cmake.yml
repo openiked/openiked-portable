@@ -48,6 +48,11 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
 
+    - name: Test
+      working-directory: ${{github.workspace}}/build/regress/dh
+      shell: bash
+      run: ./dhtest
+
   macos:
     strategy:
       matrix:
@@ -69,3 +74,8 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: cmake --build . --config $BUILD_TYPE
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build/regress/dh
+      shell: bash
+      run: ./dhtest
