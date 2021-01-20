@@ -5979,6 +5979,29 @@ ikev2_childsa_negotiate(struct iked *env, struct iked_sa *sa,
 			if (ikev2_cp_fixflow(sa, flow, flowb) == -1)
 				continue;
 
+#if defined(HAVE_LINUX_IPSEC_H)
+			struct iked_flow	*flowc;
+
+			if ((flowc = calloc(1, sizeof(*flowc))) == NULL) {
+				log_debug("%s: failed to get flow", __func__);
+				flow_free(flowa);
+				flow_free(flowb);
+				goto done;
+			}
+
+			memcpy(flowc, flowa, sizeof(*flow));
+
+			/* Linux is special and requires a FWD flow */
+			flowc->flow_dir = IPSEC_DIR_FWD;
+			memcpy(&flowc->flow_src, &flow->flow_dst,
+			    sizeof(flow->flow_dst));
+			memcpy(&flowc->flow_dst, &flow->flow_src,
+			    sizeof(flow->flow_src));
+			if (ikev2_cp_fixflow(sa, flow, flowc) == -1)
+				continue;
+
+			TAILQ_INSERT_TAIL(&sa->sa_flows, flowc, flow_entry);
+#endif
 			TAILQ_INSERT_TAIL(&sa->sa_flows, flowa, flow_entry);
 			TAILQ_INSERT_TAIL(&sa->sa_flows, flowb, flow_entry);
 		}
