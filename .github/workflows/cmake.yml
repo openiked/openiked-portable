@@ -53,10 +53,10 @@ jobs:
       shell: bash
       run: ./dhtest
 
-    - name: Test Parser
-      working-directory: ${{github.workspace}}/build/regress/parser
+    - name: Test Libfuzz-Parser
+      working-directory: ${{github.workspace}}/build/regress/parser-libfuzzer
       shell: bash
-      run: ./test_parser
+      run: bash run_test.sh
 
   macos:
     strategy:
