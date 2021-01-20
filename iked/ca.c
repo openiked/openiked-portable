@@ -565,6 +565,8 @@ ca_getreq(struct iked *env, struct imsg *imsg)
 			if (subj == NULL)
 				return (-1);
 			subj_name = X509_NAME_oneline(subj, NULL, 0);
+			if (subj_name == NULL)
+				return (-1);
 			log_debug("%s: found CA %s", __func__, subj_name);
 
 			if ((cert = ca_by_issuer(store->ca_certs,
@@ -615,6 +617,8 @@ ca_getreq(struct iked *env, struct imsg *imsg)
 		if (subj == NULL)
 			return (-1);
 		subj_name = X509_NAME_oneline(subj, NULL, 0);
+		if (subj_name == NULL)
+			return (-1);
 		log_debug("%s: found local certificate %s", __func__,
 		    subj_name);
 
@@ -788,6 +792,8 @@ ca_reload(struct iked *env)
 		if (subj == NULL)
 			return (-1);
 		subj_name = X509_NAME_oneline(subj, NULL, 0);
+		if (subj_name == NULL)
+			return (-1);
 		log_debug("%s: %s", __func__, subj_name);
 
 		if (ibuf_add(env->sc_certreq, md, len) != 0) {
@@ -1597,6 +1603,8 @@ ca_validate_cert(struct iked *env, struct iked_static_id *id,
 		if (subj == NULL)
 			goto err;
 		subj_name = X509_NAME_oneline(subj, NULL, 0);
+		if (subj_name == NULL)
+			goto err;
 		log_debug("%s: %s %.100s", __func__, subj_name, errstr);
 	}
  err:

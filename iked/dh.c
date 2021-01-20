@@ -403,10 +403,11 @@ modp_init(struct dh_group *group)
 		return (-1);
 
 	if (!BN_hex2bn(&p, group->spec->prime) ||
-	    !BN_hex2bn(&g, group->spec->generator))
+	    !BN_hex2bn(&g, group->spec->generator) ||
+	    DH_set0_pqg(dh, p, NULL, g) == 0)
 		goto done;
 
-	DH_set0_pqg(dh, p, NULL, g);
+	p = g = 0;
 	group->dh = dh;
 
 	ret = 0;
