@@ -529,12 +529,12 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	if (flow->flow_local == NULL) {
 		slocal.ss_family = flow->flow_src.addr_af;
 		speer.ss_family = flow->flow_dst.addr_af;
-	} else if (flow->flow_dir == IPSEC_DIR_INBOUND) {
-		memcpy(&speer, &flow->flow_local->addr, sizeof(slocal));
-		memcpy(&slocal, &flow->flow_peer->addr, sizeof(speer));
-	} else {
+	} else if (flow->flow_dir == IPSEC_DIR_OUTBOUND) {
 		memcpy(&slocal, &flow->flow_local->addr, sizeof(slocal));
 		memcpy(&speer, &flow->flow_peer->addr, sizeof(speer));
+	} else {
+		memcpy(&speer, &flow->flow_local->addr, sizeof(slocal));
+		memcpy(&slocal, &flow->flow_peer->addr, sizeof(speer));
 	}
 	socket_af((struct sockaddr *)&slocal, 0);
 	socket_af((struct sockaddr *)&speer, 0);
@@ -575,8 +575,8 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	sa_ipsec.sadb_x_ipsecrequest_mode = IPSEC_MODE_TUNNEL;
 	/* XXX: Always use IPSEC_LEVEL_REQUIRE */
 	sa_ipsec.sadb_x_ipsecrequest_level =
-	    flow->flow_dir == IPSEC_DIR_INBOUND ?
-	    IPSEC_LEVEL_USE : IPSEC_LEVEL_REQUIRE;
+	    flow->flow_dir == IPSEC_DIR_OUTBOUND ?
+	    IPSEC_LEVEL_REQUIRE : IPSEC_LEVEL_USE ;
 	sa_ipsec.sadb_x_ipsecrequest_len = sizeof(sa_ipsec);
 	sa_ipsec.sadb_x_ipsecrequest_len += SS_LEN(slocal) + SS_LEN(speer);
 	padlen = ROUNDUP(sa_ipsec.sadb_x_ipsecrequest_len) -
