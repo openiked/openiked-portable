@@ -15,11 +15,8 @@
 set(SRCS)
 list(APPEND SRCS
 	test_helper.c
+	fuzz.c
 )
-
-if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
-	list (APPEND SRCS fuzz.c)
-endif()
 
 if(TARGET compat)
 	list(APPEND SRCS $<TARGET_OBJECTS:compat>)

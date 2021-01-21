@@ -29,18 +29,18 @@ if(TARGET compat)
 	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
 endif()
 
-add_executable(test_parser ${SRCS})
+add_executable(test_libfuzzer ${SRCS})
 
-target_include_directories(test_parser
+target_include_directories(test_libfuzzer
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked/compat
 )
 
-target_link_libraries(test_parser
+target_link_libraries(test_libfuzzer
 	PRIVATE util event crypto ssl
 )
 
-target_compile_options(test_parser PRIVATE ${CFLAGS})
+target_compile_options(test_libfuzzer PRIVATE ${CFLAGS})
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/corpus)
 configure_file(run_test.sh run_test.sh COPYONLY)
