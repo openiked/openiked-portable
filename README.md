@@ -4,6 +4,7 @@
 [![CMake](https://github.com/openiked/openiked-portable/workflows/CMake/badge.svg)](https://github.com/openiked/openiked-portable/actions?query=workflow%3ACMake)
 [![builds.sr.ht status](https://builds.sr.ht/~mbuhl/openiked-portable.svg)](https://builds.sr.ht/~mbuhl/openiked-portable?)
 [![#openiked on matrix.org](https://img.shields.io/badge/matrix-%23openiked-blue)](https://app.element.io/#/room/#openiked:matrix.org)
+[![#openiked on freenode.net](https://img.shields.io/badge/IRC-%23openiked-blue)](https://webchat.freenode.net/#openiked)
 
 This is a port of OpenBSD's [OpenIKED](https://openiked.org) to different
 Unix-like operating systems, including Linux, macOS and FreeBSD.
