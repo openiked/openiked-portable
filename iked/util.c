@@ -427,7 +427,7 @@ recvfromto(int s, void *buf, size_t len, int flags, struct sockaddr *from,
 	struct iovec		 iov;
 	struct msghdr		 msg;
 	struct cmsghdr		*cmsg;
-#if defined(IP_RECVDSTADDR)
+#if !defined(IP_RECVORIGDSTADDR) && defined(IP_RECVDSTADDR)
 	struct sockaddr_in	*in;
 #endif
 #ifdef IPV6_PKTINFO
