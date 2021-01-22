@@ -611,7 +611,8 @@ fcopy(char *src, char *dst, mode_t mode)
 	}
 
 	while ((r = read(ifd, buf, sizeof(buf))) > 0) {
-		write(ofd, buf, r);
+		if (write(ofd, buf, r) == -1)
+			err(1, "%s: write", __func__);
 	}
 
 	close(ofd);
@@ -817,7 +818,8 @@ ca_export(struct ca *ca, char *keyname, char *myname, char *password)
 			err(1, "%s: snprintf", __func__);
 		if ((fd = open(dst, O_WRONLY|O_CREAT, 0644)) == -1)
 			err(1, "open %s", dst);
-		write(fd, myname, strlen(myname));
+		if (write(fd, myname, strlen(myname)) == -1)
+			err(1, "%s: write", __func__);
 		close(fd);
 	}
 
