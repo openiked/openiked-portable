@@ -538,8 +538,8 @@ fcopy(char *src, char *dst, mode_t mode)
 	if ((ofd = open(dst, O_WRONLY|O_CREAT|O_TRUNC, mode)) == -1) {
 		int saved_errno = errno;
 		close(ifd);
-		//errc(1, saved_errno, "open %s", dst);
-		exit(1);
+		errno = saved_errno;
+		err(1, "open %s", dst);
 	}
 
 	while ((r = read(ifd, buf, sizeof(buf))) > 0) {
@@ -587,9 +587,10 @@ fcopy_env(const char *src, const char *dst, mode_t mode)
 	close(ofd);
 	if (ifp != NULL)
 		fclose(ifp);
-	if (r == -1)
-		//errc(1, saved_errno, "open %s", dst);
-		exit(1);
+	if (r == -1) {
+		errno = saved_errno;
+		err(1, "open %s", dst);
+	}
 }
 
 int
