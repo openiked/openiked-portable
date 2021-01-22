@@ -1117,17 +1117,6 @@ ikev2_init_recv(struct iked *env, struct iked_message *msg,
 		    " updated SA to peer %s local %s", __func__,
 		    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0),
 		    print_host((struct sockaddr *)&sa->sa_local.addr, NULL, 0));
-
-#if defined(UDP_ENCAP_ESPINUDP)
-		int	 sopt;
-		sopt = UDP_ENCAP_ESPINUDP;
-		if (setsockopt(sock->sock_fd, IPPROTO_UDP, UDP_ENCAP,
-		    &sopt, sizeof(sopt)) < 0) {
-			log_warn("%s: failed to set UDP encap socket option",
-			    __func__);
-			return;
-		}
-#endif
 	}
 
 	switch (hdr->ike_exchange) {
@@ -1616,6 +1605,19 @@ ikev2_init_done(struct iked *env, struct iked_sa *sa)
 
 	if (!sa_stateok(sa, IKEV2_STATE_VALID))
 		return (0);	/* ignored */
+
+#if defined(UDP_ENCAP_ESPINUDP)
+	if (sa->sa_udpencap) {
+		int	 sopt;
+		sopt = UDP_ENCAP_ESPINUDP;
+		if (setsockopt(sa->sa_fd, IPPROTO_UDP, UDP_ENCAP,
+		    &sopt, sizeof(sopt)) < 0) {
+			log_warn("%s: failed to set UDP encap socket option",
+			    __func__);
+			return (-1);
+		}
+	}
+#endif
 
 	ret = ikev2_childsa_negotiate(env, sa, &sa->sa_kex, &sa->sa_proposals,
 	    sa->sa_hdr.sh_initiator, 0);

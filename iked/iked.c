@@ -240,17 +240,17 @@ parent_configure(struct iked *env)
 
 	/* see comment on config_setsocket() */
 	if (env->sc_nattmode != NATT_FORCE)
-		config_setsocket(env, &ss, htons(IKED_IKE_PORT), PROC_IKEV2);
+		config_setsocket(env, &ss, htons(IKED_IKE_PORT), PROC_IKEV2, 0);
 	if (env->sc_nattmode != NATT_DISABLE)
-		config_setsocket(env, &ss, htons(env->sc_nattport), PROC_IKEV2);
+		config_setsocket(env, &ss, htons(env->sc_nattport), PROC_IKEV2, 1);
 
 	bzero(&ss, sizeof(ss));
 	ss.ss_family = AF_INET6;
 
 	if (env->sc_nattmode != NATT_FORCE)
-		config_setsocket(env, &ss, htons(IKED_IKE_PORT), PROC_IKEV2);
+		config_setsocket(env, &ss, htons(IKED_IKE_PORT), PROC_IKEV2, 0);
 	if (env->sc_nattmode != NATT_DISABLE)
-		config_setsocket(env, &ss, htons(env->sc_nattport), PROC_IKEV2);
+		config_setsocket(env, &ss, htons(env->sc_nattport), PROC_IKEV2, 1);
 
 	/*
 	 * pledge in the parent process:

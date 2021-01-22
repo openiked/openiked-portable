@@ -21,6 +21,8 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 
+#include <netinet/udp.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -569,12 +571,26 @@ config_getreset(struct iked *env, struct imsg *imsg)
  */
 int
 config_setsocket(struct iked *env, struct sockaddr_storage *ss,
-    in_port_t port, enum privsep_procid id)
+    in_port_t port, enum privsep_procid id, int natt)
 {
 	int	 s;
 
 	if ((s = udp_bind((struct sockaddr *)ss, port)) == -1)
 		return (-1);
+
+#if defined(UDP_ENCAP_ESPINUDP)
+	if (natt) {
+		int	 sopt;
+		sopt = UDP_ENCAP_ESPINUDP;
+		if (setsockopt(s, IPPROTO_UDP, UDP_ENCAP,
+		    &sopt, sizeof(sopt)) < 0) {
+			log_warn("%s: failed to set UDP encap socket option",
+			    __func__);
+			return (-1);
+		}
+	}
+#endif
+
 	proc_compose_imsg(&env->sc_ps, id, -1,
 	    IMSG_UDP_SOCKET, -1, s, ss, sizeof(*ss));
 	return (0);

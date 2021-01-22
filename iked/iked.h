@@ -830,7 +830,7 @@ int	 config_setflow(struct iked *, struct iked_policy *,
 	    enum privsep_procid);
 int	 config_getflow(struct iked *, struct imsg *);
 int	 config_setsocket(struct iked *, struct sockaddr_storage *, in_port_t,
-	    enum privsep_procid);
+	    enum privsep_procid, int);
 int	 config_getsocket(struct iked *env, struct imsg *,
 	    void (*cb)(int, short, void *));
 int	 config_setpfkey(struct iked *, enum privsep_procid);
