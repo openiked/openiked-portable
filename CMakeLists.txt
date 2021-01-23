@@ -176,11 +176,6 @@ if(HAVE_GETDTABLECOUNT)
 	add_definitions(-DHAVE_GETDTABLECOUNT)
 endif()
 
-check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
-if(HAVE_CLOCK_GETTIME)
-	add_definitions(-DHAVE_CLOCK_GETTIME)
-endif()
-
 check_symbol_exists(timespecsub "sys/time.h" HAVE_TIMESPECSUB)
 if(HAVE_TIMESPECSUB)
 	add_definitions(-DHAVE_TIMESPECSUB)
