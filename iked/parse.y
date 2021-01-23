@@ -49,6 +49,8 @@
 #include <netdb.h>
 #include <event.h>
 
+#include <net/pfkeyv2.h>
+
 #include "iked.h"
 #include "ikev2.h"
 #include "eap.h"
@@ -686,11 +688,16 @@ protoval	: STRING			{
 
 rdomain		: /* empty */ 			{ $$ = -1; }
 		| RDOMAIN NUMBER		{
+#ifdef SADB_X_EXT_RDOMAIN
 			if ($2 > 255 || $2 < 0) {
 				yyerror("rdomain outside range");
 				YYERROR;
 			}
 			$$ = $2;
+#else
+			yyerror("'rdomain' is not supported on this platform");
+			YYERROR;
+#endif
 		}
 
 hosts_list	: hosts				{ $$ = $1; }

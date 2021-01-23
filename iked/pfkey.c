@@ -27,11 +27,7 @@
 
 #include <netinet/in.h>
 #include <netinet/ip_ipsp.h>
-#if defined(HAVE_NET_PFKEY_H)
 #include <net/pfkeyv2.h>
-#elif defined(HAVE_LINUX_PFKEY_H)
-#include <linux/pfkeyv2.h>
-#endif
 #include <netinet/udp.h>
 
 #include <err.h>
