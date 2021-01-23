@@ -647,7 +647,7 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 
 	if ((sa_polid = pfkey_find_ext(reply, rlen,
 	    SADB_X_EXT_POLICY)) == NULL) {
-		log_debug("%s: erronous reply", __func__);
+		log_debug("%s: erroneous reply", __func__);
 		goto done;
 	}
 
@@ -1399,7 +1399,7 @@ pfkey_sa_getspi(int sd, uint8_t satype, struct iked_childsa *sa,
 		goto done;
 	}
 	if ((sa_ext = pfkey_find_ext(data, n, SADB_EXT_SA)) == NULL) {
-		log_debug("%s: erronous reply", __func__);
+		log_debug("%s: erroneous reply", __func__);
 		goto done;
 	}
 
