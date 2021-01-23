@@ -2772,7 +2772,7 @@ ikev2_resp_recv(struct iked *env, struct iked_message *msg,
 		}
 		if (ikev2_resp_ike_sa_init(env, msg) != 0) {
 			log_debug("%s: failed to send init response", __func__);
-			ikev2_ike_sa_setreason(sa, "SA_INIT reponse failed");
+			ikev2_ike_sa_setreason(sa, "SA_INIT response failed");
 			sa_state(env, sa, IKEV2_STATE_CLOSED);
 			return;
 		}
