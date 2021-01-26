@@ -19,8 +19,10 @@
 
 #include <sys/queue.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/uio.h>
 
+#include <netinet/in.h>
 #include <netinet/udp.h>
 
 #include <stdlib.h>
