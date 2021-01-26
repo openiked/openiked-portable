@@ -69,3 +69,4 @@ target_link_libraries(ikectl
 )
 
 install(TARGETS ikectl RUNTIME DESTINATION sbin)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ikectl.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8/)
