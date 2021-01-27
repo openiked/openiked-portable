@@ -7042,19 +7042,19 @@ ikev2_cp_fixflow(struct iked_sa *sa, struct iked_flow *flow,
 {
 	switch (sa->sa_cp) {
 	case IKEV2_CP_REQUEST:
-		if (patched->flow_dir == IPSP_DIRECTION_IN)
-			return (ikev2_cp_fixaddr(sa, &flow->flow_dst,
-			    &patched->flow_src));
-		else
+		if (patched->flow_dir == IPSP_DIRECTION_OUT)
 			return (ikev2_cp_fixaddr(sa, &flow->flow_dst,
 			    &patched->flow_dst));
+		else
+			return (ikev2_cp_fixaddr(sa, &flow->flow_dst,
+			    &patched->flow_src));
 	case IKEV2_CP_REPLY:
-		if (patched->flow_dir == IPSP_DIRECTION_IN)
-			return (ikev2_cp_fixaddr(sa, &flow->flow_src,
-			    &patched->flow_dst));
-		else
+		if (patched->flow_dir == IPSP_DIRECTION_OUT)
 			return (ikev2_cp_fixaddr(sa, &flow->flow_src,
 			    &patched->flow_src));
+		else
+			return (ikev2_cp_fixaddr(sa, &flow->flow_src,
+			    &patched->flow_dst));
 	default:
 		return (0);
 	}
