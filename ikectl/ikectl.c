@@ -73,7 +73,8 @@ usage(void)
 {
 	extern char *__progname;
 
-	fprintf(stderr, "usage: %s [-q] [-s socket] command [arg ...]\n",
+	fprintf(stderr, "usage: %s [-q] [-s socket] command [arg ...]\n"
+		"See ikectl(8) for more info\n",
 	    __progname);
 	exit(1);
 }
@@ -166,6 +167,9 @@ main(int argc, char *argv[])
 	int			 v = 0;
 	int			 quiet = 0;
 	const char		*sock = IKED_SOCKET;
+
+	if (argv[1] == NULL)
+		usage();
 
 	while ((ch = getopt(argc, argv, "qs:")) != -1) {
 		switch (ch) {
