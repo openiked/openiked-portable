@@ -1,4 +1,4 @@
-/*	$OpenBSD: iked.h,v 1.181 2021/01/26 23:06:23 tobhe Exp $	*/
+/*	$OpenBSD: iked.h,v 1.182 2021/01/28 01:20:37 mortimer Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -37,8 +37,6 @@
 /*
  * Common IKEv1/IKEv2 header
  */
-
-extern enum privsep_procid privsep_process;
 
 struct ike_header {
 	uint64_t	 ike_ispi;		/* Initiator cookie */
