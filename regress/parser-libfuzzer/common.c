@@ -51,6 +51,7 @@ int	 ikev2_send_informational(struct iked *, struct iked_message *);
 struct ibuf *
 	 ikev2_msg_decrypt(struct iked *, struct iked_sa *, struct ibuf *,
 	     struct ibuf *);
+void ikev2_msg_cleanup(struct iked *, struct iked_message *);
 
 int
 eap_parse(struct iked *env, const struct iked_sa *sa, struct iked_message *msg,
@@ -210,4 +211,43 @@ ikev2_msg_decrypt(struct iked *env, struct iked_sa *sa,
 void
 ikev2_ike_sa_setreason(struct iked_sa *sa, char *r)
 {
+}
+
+void
+ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
+{
+	struct iked_certreq *cr;
+
+	if (msg == msg->msg_parent) {
+		ibuf_release(msg->msg_nonce);
+		ibuf_release(msg->msg_ke);
+		ibuf_release(msg->msg_auth.id_buf);
+		ibuf_release(msg->msg_id.id_buf);
+		ibuf_release(msg->msg_cert.id_buf);
+		ibuf_release(msg->msg_cookie);
+		ibuf_release(msg->msg_cookie2);
+		ibuf_release(msg->msg_del_buf);
+		free(msg->msg_eap.eam_user);
+		free(msg->msg_cp_addr);
+		free(msg->msg_cp_addr6);
+
+		struct iked_proposal *prop, *proptmp;
+		TAILQ_FOREACH_SAFE(prop, &msg->msg_proposals, prop_entry, proptmp) {
+			TAILQ_REMOVE(&msg->msg_proposals, prop, prop_entry);
+			if (prop->prop_nxforms)
+				free(prop->prop_xforms);
+			free(prop);
+		}
+
+		while ((cr = SIMPLEQ_FIRST(&msg->msg_certreqs))) {
+			ibuf_release(cr->cr_data);
+			SIMPLEQ_REMOVE_HEAD(&msg->msg_certreqs, cr_entry);
+			free(cr);
+		}
+	}
+
+	if (msg->msg_data != NULL) {
+    	ibuf_release(msg->msg_data);
+		msg->msg_data = NULL;
+	}
 }

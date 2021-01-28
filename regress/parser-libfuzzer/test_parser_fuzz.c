@@ -112,7 +112,7 @@ LLVMFuzzerTestOneInput(const char *Data, size_t Size)
 
 	fuzzed = ibuf_new(Data, Size);
 	if (fuzzed == NULL){
-                fprintf(stderr, "%s\n", "ERROR: fuzzed == NULL! (hint: fuzz-input too long?)");
+		fprintf(stderr, "%s\n", "ERROR: fuzzed == NULL! (hint: fuzz-input too long?)");
 		return -1;
 	}	
 	
@@ -127,6 +127,7 @@ LLVMFuzzerTestOneInput(const char *Data, size_t Size)
 
 	ikev2_pld_parse(NULL, &hdr, &msg, 0);
 
-	ibuf_free(fuzzed);
+	ikev2_msg_cleanup(NULL, &msg);
+
 	return 0;
 }
