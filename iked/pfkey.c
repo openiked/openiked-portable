@@ -492,9 +492,10 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	in_port_t		 sport, dport;
 	uint8_t			 smask, dmask;
 	uint8_t			 zeropad[8];
-	size_t			 padlen;
 	uint8_t			*reply = NULL;
 	ssize_t			 rlen;
+	uint64_t		 pad = 0;
+	size_t			 padlen;
 
 	bzero(&ssrc, sizeof(ssrc));
 	memcpy(&ssrc, &flow->flow_src.addr, sizeof(ssrc));
@@ -591,14 +592,19 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	    flow->flow_dir == IPSEC_DIR_OUTBOUND ?
 	    IPSEC_LEVEL_REQUIRE : IPSEC_LEVEL_USE ;
 	sa_ipsec.sadb_x_ipsecrequest_len = sizeof(sa_ipsec);
-	sa_ipsec.sadb_x_ipsecrequest_len += SS_LEN(slocal) + SS_LEN(speer);
-	padlen = ROUNDUP(sa_ipsec.sadb_x_ipsecrequest_len) -
-	    sa_ipsec.sadb_x_ipsecrequest_len;
-	sa_ipsec.sadb_x_ipsecrequest_len += padlen;
+	sa_ipsec.sadb_x_ipsecrequest_len += ROUNDUP(SS_LEN(slocal) + SS_LEN(speer));
 	sa_policy.sadb_x_policy_len = (sizeof(sa_policy) +
 	    sa_ipsec.sadb_x_ipsecrequest_len) / 8;
 
 	iov_cnt = 0;
+
+#define PAD(len)					\
+	padlen = ROUNDUP((len)) - (len);		\
+	if (padlen) {					\
+		iov[iov_cnt].iov_base = &pad;		\
+		iov[iov_cnt].iov_len = padlen;		\
+		iov_cnt++;				\
+	}
 
 	/* header */
 	iov[iov_cnt].iov_base = &smsg;
@@ -616,18 +622,20 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	iov[iov_cnt].iov_len = sizeof(sa_src);
 	iov_cnt++;
 	iov[iov_cnt].iov_base = &ssrc;
-	iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(ssrc));
+	iov[iov_cnt].iov_len = SS_LEN(ssrc);
 	smsg.sadb_msg_len += sa_src.sadb_address_len;
 	iov_cnt++;
+	PAD(SS_LEN(ssrc));
 
 	/* add destination address */
 	iov[iov_cnt].iov_base = &sa_dst;
 	iov[iov_cnt].iov_len = sizeof(sa_dst);
 	iov_cnt++;
 	iov[iov_cnt].iov_base = &sdst;
-	iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(sdst));
+	iov[iov_cnt].iov_len = SS_LEN(sdst);
 	smsg.sadb_msg_len += sa_dst.sadb_address_len;
 	iov_cnt++;
+	PAD(SS_LEN(sdst));
 
 	/* add policy extension */
 	iov[iov_cnt].iov_base = &sa_policy;
@@ -641,11 +649,12 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 		iov_cnt++;
 		if (sa_ipsec.sadb_x_ipsecrequest_mode == IPSEC_MODE_TUNNEL) {
 			iov[iov_cnt].iov_base = &slocal;
-			iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(slocal));
+			iov[iov_cnt].iov_len = SS_LEN(slocal);
 			iov_cnt++;
 			iov[iov_cnt].iov_base = &speer;
-			iov[iov_cnt].iov_len = ROUNDUP(SS_LEN(speer));
+			iov[iov_cnt].iov_len = SS_LEN(speer);
 			iov_cnt++;
+			PAD(SS_LEN(slocal) + SS_LEN(speer));
 		}
 		if (padlen) {
 			iov[iov_cnt].iov_base = zeropad;
@@ -653,6 +662,8 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 			iov_cnt++;
 		}
 	}
+
+#undef PAD
 
 	ret = -1;
 	if (pfkey_write(sd, &smsg, iov, iov_cnt, &reply, &rlen) != 0)
