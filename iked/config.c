@@ -582,7 +582,7 @@ config_setsocket(struct iked *env, struct sockaddr_storage *ss,
 
 #if defined(UDP_ENCAP_ESPINUDP)
 	if (natt
-#if defined(HAVE_UDPENCAP6)
+#if !defined(HAVE_UDPENCAP6)
 	    && ss->ss_family != AF_INET6
 #endif
 	    ) {
