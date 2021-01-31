@@ -7023,7 +7023,7 @@ ikev2_cp_fixaddr(struct iked_sa *sa, struct iked_addr *addr,
 			return (-1);
 		in4 = (struct sockaddr_in *)&addr->addr;
 		if (in4->sin_addr.s_addr)
-			return (-1);
+			return (-2);
 		memcpy(patched, naddr, sizeof(*patched));
 		patched->addr_net = 0;
 		patched->addr_mask = 32;
@@ -7035,7 +7035,7 @@ ikev2_cp_fixaddr(struct iked_sa *sa, struct iked_addr *addr,
 			return (-1);
 		in6 = (struct sockaddr_in6 *)&addr->addr;
 		if (!IN6_IS_ADDR_UNSPECIFIED(&in6->sin6_addr))
-			return (-1);
+			return (-2);
 		memcpy(patched, naddr, sizeof(*patched));
 		patched->addr_net = 0;
 		patched->addr_mask = 128;
