@@ -656,11 +656,6 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 			iov_cnt++;
 			PAD(SS_LEN(slocal) + SS_LEN(speer));
 		}
-		if (padlen) {
-			iov[iov_cnt].iov_base = zeropad;
-			iov[iov_cnt].iov_len = padlen;
-			iov_cnt++;
-		}
 	}
 
 #undef PAD
