@@ -1,4 +1,4 @@
-/*	$OpenBSD: ikev2.c,v 1.297 2021/01/21 16:50:46 tobhe Exp $	*/
+/*	$OpenBSD: ikev2.c,v 1.301 2021/02/01 16:37:48 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
@@ -600,7 +600,7 @@ ikev2_recv(struct iked *env, struct iked_message *msg)
 	    betoh64(hdr->ike_ispi), betoh64(hdr->ike_rspi),
 	    initiator);
 	msg->msg_msgid = betoh32(hdr->ike_msgid);
-	if (policy_lookup(env, msg, NULL) != 0)
+	if (policy_lookup(env, msg, NULL, NULL, 0) != 0)
 		return;
 
 	logit(hdr->ike_exchange == IKEV2_EXCHANGE_INFORMATIONAL ?
@@ -884,7 +884,7 @@ ikev2_ike_auth_recv(struct iked *env, struct iked_sa *sa,
 		old = sa->sa_policy;
 
 		sa->sa_policy = NULL;
-		if (policy_lookup(env, msg, &sa->sa_proposals) != 0 ||
+		if (policy_lookup(env, msg, &sa->sa_proposals, NULL, 0) != 0 ||
 		    msg->msg_policy == NULL) {
 			log_info("%s: no compatible policy found",
 			    SPI_SA(sa, __func__));
@@ -919,8 +919,8 @@ ikev2_ike_auth_recv(struct iked *env, struct iked_sa *sa,
 
 		/* verify policy on initiator */
 		sa->sa_policy = NULL;
-		if (policy_lookup(env, msg, &sa->sa_proposals) != 0 ||
-		    msg->msg_policy != old) {
+		if (policy_lookup(env, msg, &sa->sa_proposals, &old->pol_flows,
+		    old->pol_nflows) != 0 || msg->msg_policy != old) {
 
 			/* get dstid */
 			if (msg->msg_id.id_type) {
@@ -5342,8 +5342,8 @@ ikev2_sa_responder(struct iked *env, struct iked_sa *sa, struct iked_sa *osa,
 	if (osa == NULL) {
 		old = sa->sa_policy;
 		sa->sa_policy = NULL;
-		if (policy_lookup(env, msg, &msg->msg_proposals) != 0 ||
-		    msg->msg_policy == NULL) {
+		if (policy_lookup(env, msg, &msg->msg_proposals,
+		    NULL, 0) != 0 || msg->msg_policy == NULL) {
 			sa->sa_policy = old;
 			log_info("%s: no proposal chosen", __func__);
 			msg->msg_error = IKEV2_N_NO_PROPOSAL_CHOSEN;
