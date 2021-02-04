@@ -407,7 +407,7 @@ modp_init(struct dh_group *group)
 	    DH_set0_pqg(dh, p, NULL, g) == 0)
 		goto done;
 
-	p = g = 0;
+	p = g = NULL;
 	group->dh = dh;
 
 	ret = 0;
