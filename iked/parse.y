@@ -2992,6 +2992,7 @@ create_ike(char *name, int af, uint8_t ipproto,
 			}
 
 			if (!auth) {
+#if !defined(HAVE_LINUX_PFKEY_H)
 				if ((p = calloc(1, sizeof(*p))) == NULL)
 					err(1, "%s", __func__);
 
@@ -3019,6 +3020,10 @@ create_ike(char *name, int af, uint8_t ipproto,
 				p->prop_nxforms = xfi;
 				TAILQ_INSERT_TAIL(&pol.pol_proposals, p, prop_entry);
 				pol.pol_nproposals++;
+#else
+				yyerror("ciphers not supported on this platform");
+				goto done;
+#endif
 			}
 			if (!noauth) {
 				if ((p = calloc(1, sizeof(*p))) == NULL)
