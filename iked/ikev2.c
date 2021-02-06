@@ -5994,20 +5994,9 @@ ikev2_childsa_negotiate(struct iked *env, struct iked_sa *sa,
 				goto done;
 			}
 
-			memcpy(flowc, flowa, sizeof(*flow));
-
 			/* Linux is special and requires a FWD flow */
+			memcpy(flowc, flowb, sizeof(*flow));
 			flowc->flow_dir = IPSEC_DIR_FWD;
-			memcpy(&flowc->flow_src, &flow->flow_dst,
-			    sizeof(flow->flow_dst));
-			memcpy(&flowc->flow_dst, &flow->flow_src,
-			    sizeof(flow->flow_src));
-			if (ikev2_cp_fixflow(sa, flow, flowc) == -1) {
-				flow_free(flowa);
-				flow_free(flowb);
-				flow_free(flowc);
-				continue;
-			}
 
 			TAILQ_INSERT_TAIL(&sa->sa_flows, flowc, flow_entry);
 #endif
