@@ -1,4 +1,4 @@
-/*	$OpenBSD: ca.c,v 1.75 2020/12/05 19:10:47 tobhe Exp $	*/
+/*	$OpenBSD: ca.c,v 1.77 2021/02/07 00:56:06 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -132,6 +132,8 @@ ca_shutdown(struct privsep_proc *p)
 	ibuf_release(env->sc_certreq);
 	if ((store = env->sc_priv) == NULL)
 		return;
+	X509_STORE_free(store->ca_cas);
+	X509_STORE_free(store->ca_certs);
 	ibuf_release(store->ca_pubkey.id_buf);
 	ibuf_release(store->ca_privkey.id_buf);
 	free(store);
