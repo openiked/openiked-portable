@@ -673,6 +673,7 @@ sa_address(struct iked_sa *sa, struct iked_addr *addr, struct sockaddr *peer)
 int
 sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 {
+#ifdef HAVE_VROUTE
 	struct iked_flow	*saflow;
 	struct iovec		 iov[4];
 	int			 iovcnt;
@@ -781,6 +782,7 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 				return (-1);
 		}
 	}
+#endif
 
 	return (0);
 }
