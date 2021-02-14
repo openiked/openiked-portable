@@ -129,6 +129,9 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 	list(APPEND SRCS ipsec.c pfkey.c)
 endif()
+if(HAVE_VROUTE)
+	list(APPEND SRCS vroute.c)
+endif()
 
 list(APPEND SRCS
 	ca.c
