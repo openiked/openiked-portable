@@ -39,6 +39,11 @@
 
 __dead void usage(void);
 
+/* Saves a copy of argv for setproctitle emulation */
+#ifndef HAVE_SETPROCTITLE
+static char **saved_av;
+#endif
+
 void	 parent_shutdown(struct iked *);
 void	 parent_sig_handler(int, short, void *);
 int	 parent_dispatch_ca(int, struct privsep_proc *, struct imsg *);
@@ -77,6 +82,21 @@ main(int argc, char *argv[])
 	struct privsep	*ps;
 
 	log_init(1, LOG_DAEMON);
+
+#ifndef HAVE_SETPROCTITLE
+	int		 i;
+	saved_av = calloc(argc + 1, sizeof(*saved_av));
+	if (saved_av == NULL)
+		errx(1, "calloc");
+	for (i = 0; i < argc; i++) {
+		saved_av[i] = strdup(argv[i]);
+		if (saved_av[i] == NULL)
+			errx(1, "strdup");
+	}
+	saved_av[i] = NULL;
+	compat_init_setproctitle(argc, argv);
+	argv = saved_av;
+#endif
 
 	while ((c = getopt(argc, argv, "6D:df:np:Ss:Ttv")) != -1) {
 		switch (c) {
