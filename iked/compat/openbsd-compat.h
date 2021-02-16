@@ -108,6 +108,7 @@ int bsd_socket(int domain, int type, int protocol);
 #endif
 
 #if !defined(HAVE_SETPROCTITLE)
+void compat_init_setproctitle(int argc, char *argv[]);
 void setproctitle(const char *fmt, ...);
 #endif
 
