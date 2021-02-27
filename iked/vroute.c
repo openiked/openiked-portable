@@ -340,11 +340,13 @@ vroute_doroute(struct iked *env, int flags, int addrs, int rdomain, uint8_t type
 	bzero(&m_rtmsg, sizeof(m_rtmsg));
 #define rtm m_rtmsg.vm_rtm
 	rtm.rtm_version = RTM_VERSION;
-	rtm.rtm_tableid = rdomain;
 	rtm.rtm_type = type;
 	rtm.rtm_seq = ++ivr->ivr_rtseq;
+#ifdef __OpenBSD__
+	rtm.rtm_tableid = rdomain;
 	if (type != RTM_GET)
 		rtm.rtm_priority = IKED_VROUTE_PRIO;
+#endif
 	rtm.rtm_flags = flags;
 	rtm.rtm_addrs = addrs;
 
