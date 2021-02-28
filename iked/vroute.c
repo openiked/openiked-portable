@@ -45,6 +45,11 @@ int vroute_setroute(struct iked *, uint8_t, struct sockaddr *, uint8_t,
 int vroute_doroute(struct iked *, int, int, int, uint8_t, struct sockaddr *,
     struct sockaddr *, struct sockaddr *, int *);
 int vroute_doaddr(struct iked *, char *, struct sockaddr *, struct sockaddr *, int);
+#ifdef __FreeBSD__
+static int vroute_dodefaultroute(struct iked *, int, int, uint8_t,
+    struct sockaddr *);
+#endif
+
 
 struct iked_vroute_sc {
 	int	ivr_iosock;
@@ -272,6 +277,11 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 		break;
 	}
 
+#ifdef __FreeBSD__
+	if (mask && mask2prefixlen(mask) == 0) {
+		return (vroute_dodefaultroute(env, flags, addrs, type, addr));
+	}
+#endif
 	return (vroute_doroute(env, flags, addrs, rdomain, type,
 	    dest, mask, addr, NULL));
 }
@@ -420,6 +430,76 @@ vroute_doroute(struct iked *env, int flags, int addrs, int rdomain, uint8_t type
 
 	return (0);
 }
+
+#ifdef __FreeBSD__
+static int
+vroute_dodefaultroute(struct iked *env, int flags, int addrs, uint8_t type,
+    struct sockaddr *gateway)
+{
+	struct sockaddr_storage	 dest, mask;
+	struct sockaddr_in	*in;
+	struct sockaddr_in6	*in6;
+	int ret;
+	int af;
+
+	bzero(&dest, sizeof(dest));
+	bzero(&mask, sizeof(mask));
+
+	/* 0/1 */
+	af = gateway->sa_family;
+	switch (af) {
+	case AF_INET:
+		in = (struct sockaddr_in *)&dest;
+		in->sin_addr.s_addr = INADDR_ANY;
+		in->sin_family = af;
+		in->sin_len = sizeof(*in);
+
+		in = (struct sockaddr_in *)&mask;
+		in->sin_addr.s_addr = prefixlen2mask(1);
+		in->sin_family = af;
+		in->sin_len = sizeof(*in);
+		break;
+	case AF_INET6:
+		in6 = (struct sockaddr_in6 *)&dest;
+		in6->sin6_addr = in6addr_any;
+		in6->sin6_family = af;
+		in6->sin6_len = sizeof(*in6);
+
+		in6 = (struct sockaddr_in6 *)&mask;
+		prefixlen2mask6(1,
+		    (uint32_t *)in6->sin6_addr.s6_addr);
+		in6->sin6_family = af;
+		in6->sin6_len = sizeof(*in6);
+		break;
+	default:
+		return (-1);
+	}
+	ret = vroute_doroute(env, flags, addrs, 0, type,
+	    (struct sockaddr *)&dest, (struct sockaddr *)&mask, gateway, NULL);
+	if (ret)
+		return (-1);
+
+	/* 128/1 */
+	bzero(&dest, sizeof(dest));
+	switch (af) {
+	case AF_INET:
+		in = (struct sockaddr_in *)&dest;
+		in->sin_addr.s_addr = htonl(0x80000000);
+		in->sin_family = af;
+		in->sin_len = sizeof(*in);
+		break;
+	case AF_INET6:
+		in6 = (struct sockaddr_in6 *)&dest;
+		in6->sin6_addr.s6_addr[0] = 0x80;
+		in6->sin6_family = af;
+		in6->sin6_len = sizeof(*in6);
+		break;
+	}
+
+	return (vroute_doroute(env, flags, addrs, 0, type,
+	    (struct sockaddr *)&dest, (struct sockaddr *)&mask, gateway, NULL));
+}
+#endif
 
 int
 vroute_process(struct iked *env, int msglen, struct vroute_msg *m_rtmsg,
