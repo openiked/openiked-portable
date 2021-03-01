@@ -279,7 +279,7 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 
 #ifdef __FreeBSD__
 	if (mask && mask2prefixlen(mask) == 0) {
-		return (vroute_dodefaultroute(env, flags, addrs, type, addr));
+		return (vroute_dodefaultroute(env, flags, addrs, type, gateway));
 	}
 #endif
 	return (vroute_doroute(env, flags, addrs, rdomain, type,
