@@ -586,13 +586,16 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 	bzero(&sa_ipsec, sizeof(sa_ipsec));
 	sa_ipsec.sadb_x_ipsecrequest_proto =
 	    satype == SADB_SATYPE_AH ? IPPROTO_AH : IPPROTO_ESP;
-	sa_ipsec.sadb_x_ipsecrequest_mode = IPSEC_MODE_TUNNEL;
+	sa_ipsec.sadb_x_ipsecrequest_mode = (flow->flow_transport) ?
+	    IPSEC_MODE_TRANSPORT : IPSEC_MODE_TUNNEL;
 	/* XXX: Always use IPSEC_LEVEL_REQUIRE */
 	sa_ipsec.sadb_x_ipsecrequest_level =
 	    flow->flow_dir == IPSEC_DIR_OUTBOUND ?
 	    IPSEC_LEVEL_REQUIRE : IPSEC_LEVEL_USE ;
 	sa_ipsec.sadb_x_ipsecrequest_len = sizeof(sa_ipsec);
-	sa_ipsec.sadb_x_ipsecrequest_len += ROUNDUP(SS_LEN(slocal) + SS_LEN(speer));
+	if (!flow->flow_transport)
+		sa_ipsec.sadb_x_ipsecrequest_len += ROUNDUP(SS_LEN(slocal) +
+		    SS_LEN(speer));
 	sa_policy.sadb_x_policy_len = (sizeof(sa_policy) +
 	    sa_ipsec.sadb_x_ipsecrequest_len) / 8;
 

@@ -5971,6 +5971,7 @@ ikev2_childsa_negotiate(struct iked *env, struct iked_sa *sa,
 			flowa->flow_local = &sa->sa_local;
 			flowa->flow_peer = &sa->sa_peer;
 			flowa->flow_ikesa = sa;
+			flowa->flow_transport = sa->sa_policy->pol_flags & IKED_POLICY_TRANSPORT;
 			if (ikev2_cp_fixflow(sa, flow, flowa) == -1) {
 				flow_free(flowa);
 				continue;
