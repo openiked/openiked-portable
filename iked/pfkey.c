@@ -568,13 +568,15 @@ pfkey_flow(int sd, uint8_t satype, uint8_t action, struct iked_flow *flow)
 
 	bzero(&sa_src, sizeof(sa_src));
 	sa_src.sadb_address_exttype = SADB_EXT_ADDRESS_SRC;
-	sa_src.sadb_address_proto = flow->flow_ipproto;
+	sa_src.sadb_address_proto = flow->flow_ipproto ? flow->flow_ipproto
+	    : IPSEC_ULPROTO_ANY;
 	sa_src.sadb_address_prefixlen = smask;
 	sa_src.sadb_address_len = (sizeof(sa_src) + ROUNDUP(SS_LEN(ssrc))) / 8;
 
 	bzero(&sa_dst, sizeof(sa_dst));
 	sa_dst.sadb_address_exttype = SADB_EXT_ADDRESS_DST;
-	sa_dst.sadb_address_proto = flow->flow_ipproto;
+	sa_dst.sadb_address_proto = flow->flow_ipproto ? flow->flow_ipproto
+	    : IPSEC_ULPROTO_ANY;
 	sa_dst.sadb_address_prefixlen = dmask;
 	sa_dst.sadb_address_len = (sizeof(sa_dst) + ROUNDUP(SS_LEN(sdst))) / 8;
 
