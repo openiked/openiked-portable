@@ -3238,6 +3238,7 @@ create_flow(struct iked_policy *pol, struct ipsec_addr_wrap *ipa,
 	flow->flow_saproto = pol->pol_saproto;
 	flow->flow_ipproto = pol->pol_ipproto;
 	flow->flow_rdomain = pol->pol_rdomain;
+	flow->flow_transport = pol->pol_flags & IKED_POLICY_TRANSPORT;
 
 	if (RB_INSERT(iked_flows, &pol->pol_flows, flow) == NULL)
 		pol->pol_nflows++;
