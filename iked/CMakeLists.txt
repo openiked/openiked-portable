@@ -147,6 +147,7 @@ list(APPEND SRCS
 	ikev2_msg.c
 	ocsp.c
 	policy.c
+	print.c
 	proc.c
 	smult_curve25519_ref.c
 	timer.c
