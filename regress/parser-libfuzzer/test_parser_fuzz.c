@@ -101,7 +101,7 @@ prepare_message(struct iked_message *msg, struct ibuf *data)
 
 /* Entry-Point for libFuzzer */
 int
-LLVMFuzzerTestOneInput(const char *Data, size_t Size)
+LLVMFuzzerTestOneInput(const char *data, size_t size)
 {
 	struct ibuf		*fuzzed;
 	struct ike_header	 hdr;
@@ -110,14 +110,15 @@ LLVMFuzzerTestOneInput(const char *Data, size_t Size)
 	bzero(&hdr, sizeof(hdr));
 	bzero(&msg, sizeof(msg));
 
-	fuzzed = ibuf_new(Data, Size);
+	fuzzed = ibuf_new(data, size);
 	if (fuzzed == NULL){
-		fprintf(stderr, "%s\n", "ERROR: fuzzed == NULL! (hint: fuzz-input too long?)");
+		fprintf(stderr, "%s\n", "ERROR: fuzzed == NULL! "
+		    "(hint: fuzz-input too long?)");
 		return -1;
 	}	
 	
-	// size too small?
-	if (Size < sizeof(cookies) + sizeof(genhdr)){
+	/* size too small? */
+	if (size < sizeof(cookies) + sizeof(genhdr)){
 		ibuf_free(fuzzed);
 		return 0;
 	}	       

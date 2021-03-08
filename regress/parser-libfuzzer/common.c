@@ -217,6 +217,7 @@ void
 ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 {
 	struct iked_certreq *cr;
+	struct iked_proposal *prop, *proptmp;
 
 	if (msg == msg->msg_parent) {
 		ibuf_release(msg->msg_nonce);
@@ -231,8 +232,8 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 		free(msg->msg_cp_addr);
 		free(msg->msg_cp_addr6);
 
-		struct iked_proposal *prop, *proptmp;
-		TAILQ_FOREACH_SAFE(prop, &msg->msg_proposals, prop_entry, proptmp) {
+		TAILQ_FOREACH_SAFE(prop, &msg->msg_proposals, prop_entry,
+		    proptmp) {
 			TAILQ_REMOVE(&msg->msg_proposals, prop, prop_entry);
 			if (prop->prop_nxforms)
 				free(prop->prop_xforms);
@@ -247,7 +248,7 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 	}
 
 	if (msg->msg_data != NULL) {
-    	ibuf_release(msg->msg_data);
+		ibuf_release(msg->msg_data);
 		msg->msg_data = NULL;
 	}
 }
