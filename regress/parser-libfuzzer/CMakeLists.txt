@@ -25,19 +25,14 @@ list(APPEND SRCS
 	$<TARGET_OBJECTS:iked-shared>
 )
 
-if(TARGET compat)
-	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
-endif()
-
 add_executable(test_libfuzzer ${SRCS})
 
 target_include_directories(test_libfuzzer
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked
-	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked/compat
 )
 
 target_link_libraries(test_libfuzzer
-	PRIVATE util event crypto ssl
+	PRIVATE util event crypto ssl compat
 )
 
 target_compile_options(test_libfuzzer PRIVATE ${CFLAGS})

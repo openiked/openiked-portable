@@ -22,8 +22,6 @@ include(CheckIncludeFiles)
 #include(CheckTypeSize)
 #include(GNUInstallDirs)
 
-set(IKED_COMPAT		"${CMAKE_CURRENT_SOURCE_DIR}/../iked/compat")
-
 set(SRCS)
 list(APPEND SRCS
 	ikeca.c
@@ -33,10 +31,6 @@ list(APPEND SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/../iked/log.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../iked/util.c
 )
-
-if(TARGET compat)
-	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
-endif()
 
 add_executable(ikectl ${SRCS})
 
@@ -59,13 +53,12 @@ list(APPEND CFLAGS
 target_compile_options(ikectl PRIVATE ${CFLAGS})
 
 target_include_directories(ikectl
-	PRIVATE ${IKED_COMPAT}
-		${CMAKE_CURRENT_SOURCE_DIR}
+	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 		${CMAKE_CURRENT_SOURCE_DIR}/../iked
 )
 
 target_link_libraries(ikectl
-	PRIVATE util event crypto ssl
+	PRIVATE util event crypto ssl compat
 )
 
 install(TARGETS ikectl RUNTIME DESTINATION sbin)

@@ -20,19 +20,14 @@ list(APPEND SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/../../iked/imsg_util.c
 )
 
-if(TARGET compat)
-	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
-endif()
-
 add_executable(dhtest ${SRCS})
 
 target_include_directories(dhtest
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked
-	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked/compat
 )
 
 target_link_libraries(dhtest
-	PRIVATE util crypto
+	PRIVATE util crypto compat
 )
 
 target_compile_options(dhtest PRIVATE ${CFLAGS})
