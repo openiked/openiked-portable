@@ -12,16 +12,6 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-#cmake_minimum_required(VERSION 3.0)
-
-#include(CheckCCompilerFlag)
-include(CheckFunctionExists)
-include(CheckLibraryExists)
-include(CheckSymbolExists)
-include(CheckIncludeFiles)
-#include(CheckTypeSize)
-#include(GNUInstallDirs)
-
 set(SRCS)
 list(APPEND SRCS
 	ikeca.c
