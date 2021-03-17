@@ -12,7 +12,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 project(openiked)
 
@@ -337,6 +337,7 @@ if(HAVE_VROUTE)
 	add_definitions(-DHAVE_VROUTE)
 endif()
 
+add_subdirectory(compat)
 add_subdirectory(iked)
 add_subdirectory(ikectl)
 add_subdirectory(regress/dh)

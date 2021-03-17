@@ -20,20 +20,15 @@ list(APPEND SRCS
 	$<TARGET_OBJECTS:iked-shared>
 )
 
-if(TARGET compat)
-	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
-endif()
-
 add_executable(test_parser ${SRCS})
 
 target_include_directories(test_parser
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../test_helper
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked
-	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../iked/compat
 )
 
 target_link_libraries(test_parser
-	PRIVATE util event crypto ssl test_helper
+	PRIVATE util event crypto ssl test_helper compat
 )
 
 target_compile_options(test_parser PRIVATE ${CFLAGS})

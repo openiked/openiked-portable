@@ -18,13 +18,12 @@ list(APPEND SRCS
 	fuzz.c
 )
 
-if(TARGET compat)
-	list(APPEND SRCS $<TARGET_OBJECTS:compat>)
-endif()
-
 add_library(test_helper ${SRCS})
 
 target_include_directories(test_helper
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../iked/compat
+)
+
+target_link_libraries(test_helper
+	PRIVATE compat
 )
