@@ -85,7 +85,6 @@ list(APPEND SRCS
 	timer.c
 	# Generated files
 	${CMAKE_CURRENT_BINARY_DIR}/parse.c
-	$<TARGET_OBJECTS:iked-shared>
 )
 
 add_executable(iked ${SRCS})
@@ -96,11 +95,11 @@ target_compile_options(iked-shared PRIVATE ${CFLAGS})
 target_include_directories(iked PRIVATE ${INC_DIRS})
 target_include_directories(iked-shared PRIVATE ${INC_DIRS})
 
-target_link_libraries(iked
-	PRIVATE util event crypto ssl compat
-)
 target_link_libraries(iked-shared
 	PRIVATE util event crypto ssl compat
+)
+target_link_libraries(iked
+	PRIVATE util event crypto ssl compat iked-shared
 )
 
 add_custom_command(
