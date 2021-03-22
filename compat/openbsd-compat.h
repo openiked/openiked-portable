@@ -63,6 +63,19 @@
 #endif
 #endif
 
+#if defined(__NetBSD__) && !defined(HAVE_ENDIAN_H)
+#include <sys/endian.h>
+#if !defined(betoh16)
+#define betoh16	be16toh
+#endif
+#if !defined(betoh32)
+#define betoh32	be32toh
+#endif
+#if !defined(betoh64)
+#define betoh64	be64toh
+#endif
+#endif
+
 #include <stdlib.h>
 
 #if !defined(HAVE_STRLCAT)
