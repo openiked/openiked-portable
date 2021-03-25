@@ -7,7 +7,7 @@
 [![#openiked on freenode.net](https://img.shields.io/badge/IRC-%23openiked-blue)](https://webchat.freenode.net/#openiked)
 
 This is a port of OpenBSD's [OpenIKED](https://openiked.org) to different
-Unix-like operating systems, including Linux, macOS and FreeBSD.
+Unix-like operating systems, including Linux, macOS, FreeBSD and NetBSD.
 
 ## Documentation
 
