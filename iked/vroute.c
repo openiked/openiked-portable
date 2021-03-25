@@ -44,7 +44,7 @@ int vroute_setroute(struct iked *, uint8_t, struct sockaddr *, uint8_t,
 int vroute_doroute(struct iked *, int, int, int, uint8_t, struct sockaddr *,
     struct sockaddr *, struct sockaddr *, int *);
 int vroute_doaddr(struct iked *, char *, struct sockaddr *, struct sockaddr *, int);
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined (__NetBSD__)
 static int vroute_dodefaultroute(struct iked *, int, int, uint8_t,
     struct sockaddr *);
 #endif
@@ -276,7 +276,7 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 		break;
 	}
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined (__NetBSD__)
 	if (mask && mask2prefixlen(mask) == 0) {
 		return (vroute_dodefaultroute(env, flags, addrs, type, gateway));
 	}
@@ -430,7 +430,7 @@ vroute_doroute(struct iked *env, int flags, int addrs, int rdomain, uint8_t type
 	return (0);
 }
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined (__NetBSD__)
 static int
 vroute_dodefaultroute(struct iked *env, int flags, int addrs, uint8_t type,
     struct sockaddr *gateway)
