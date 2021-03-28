@@ -2,7 +2,7 @@
 
 [ req ]
 default_bits            = 2048                  # default strength of client certificates
-default_md              = sha2
+default_md              = sha256
 encrypt_key             = yes                   # "no" is equivalent to -nodes
 prompt                  = no
 string_mask             = utf8only
