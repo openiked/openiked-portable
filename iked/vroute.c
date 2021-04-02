@@ -113,6 +113,8 @@ vroute_getaddr(struct iked *env, struct imsg *imsg)
 	ptr += addr->sa_len;
 	left -= addr->sa_len;
 
+	if (left < sizeof(*mask))
+		fatalx("bad length imsg received");
 	mask = (struct sockaddr *) ptr;
 	if (mask->sa_family != af)
 		return (-1);
