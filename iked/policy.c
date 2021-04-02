@@ -673,16 +673,13 @@ sa_address(struct iked_sa *sa, struct iked_addr *addr, struct sockaddr *peer)
 int
 sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 {
-#ifdef HAVE_VROUTE
-	struct iked_flow	*saflow;
+#if defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK)
 	struct iovec		 iov[4];
 	int			 iovcnt;
-	struct sockaddr		*caddr;
 	struct sockaddr_in	*addr;
 	struct sockaddr_in	 mask;
 	struct sockaddr_in6	*addr6;
 	struct sockaddr_in6	 mask6;
-	int			 rdomain;
 
 	if (sa->sa_policy == NULL || sa->sa_policy->pol_iface == 0)
 		return (0);
@@ -699,7 +696,9 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 		    prefixlen2mask(sa->sa_cp_addr->addr_mask ?
 		    sa->sa_cp_addr->addr_mask : 32);
 		mask.sin_family = AF_INET;
+#ifdef HAVE_SOCKADDR_SA_LEN
 		mask.sin_len = sizeof(mask);
+#endif
 		iov[1].iov_base = &mask;
 		iov[1].iov_len = sizeof(mask);
 		iovcnt++;
@@ -725,7 +724,9 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 		    sa->sa_cp_addr6->addr_mask : 128,
 		    (uint32_t *)&mask6.sin6_addr.s6_addr);
 		mask6.sin6_family = AF_INET6;
+#ifdef HAVE_SOCKADDR_SA_LEN
 		mask6.sin6_len = sizeof(mask6);
+#endif
 		iov[1].iov_base = &mask6;
 		iov[1].iov_len = sizeof(mask6);
 		iovcnt++;
@@ -739,6 +740,12 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 		    iov, iovcnt))
 			return (-1);
 	}
+
+#endif
+#ifdef HAVE_VROUTE
+	struct iked_flow	*saflow;
+	struct sockaddr		*caddr;
+	int			 rdomain;
 
 	if (add) {
 		/* Add direct route to peer */

@@ -66,6 +66,9 @@ endif()
 if(HAVE_VROUTE)
 	list(APPEND SRCS vroute.c)
 endif()
+if(HAVE_VROUTE_NETLINK)
+	list(APPEND SRCS vroute-netlink.c)
+endif()
 
 list(APPEND SRCS
 	ca.c
