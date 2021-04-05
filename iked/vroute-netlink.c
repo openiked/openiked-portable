@@ -34,18 +34,20 @@
 
 int vroute_setroute(struct iked *, uint8_t, struct sockaddr *, uint8_t,
     struct sockaddr *, int);
-int vroute_doroute(struct iked *, int, int, int, uint8_t, struct sockaddr *,
-    struct sockaddr *, struct sockaddr *, int *);
+int vroute_doroute(struct iked *, uint8_t, struct sockaddr *,
+    struct sockaddr *, struct sockaddr *, int);
 int vroute_doaddr(struct iked *, int, struct sockaddr *, struct sockaddr *, int);
 
 static int	nl_addattr(struct nlmsghdr *, int, void *, size_t);
+static int	nl_dorule(struct iked *, int, uint32_t, int, int);
 
 struct iked_vroute_sc {
 	int	ivr_rtsock;
 };
 
 #define NL_BUFLEN	1024
-#define IKED_RTM_TABLE	RT_TABLE_MAIN
+#define IKED_RT_TABLE	210
+#define IKED_RT_PRIO	210
 
 void
 vroute_init(struct iked *env)
@@ -61,6 +63,8 @@ vroute_init(struct iked *env)
 		fatal("%s: failed to create netlink socket", __func__);
 
 	env->sc_vroute = ivr;
+	nl_dorule(env, IKED_RT_TABLE, IKED_RT_PRIO, AF_INET, 1);
+	nl_dorule(env, IKED_RT_TABLE, IKED_RT_PRIO, AF_INET6, 1);
 }
 
 int
@@ -190,8 +194,7 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 	struct sockaddr		*dest, *mask = NULL, *gateway = NULL;
 	uint8_t			*ptr;
 	size_t			 left;
-	int			 addrs = 0;
-	int			 type = 0, flags = 0;
+	int			 type = 0;
 	uint8_t			 rdomain;
 
 	ptr = (uint8_t *)imsg->data;
@@ -242,19 +245,47 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 		break;
 	}
 
-	return (vroute_doroute(env, flags, addrs, rdomain, type,
-	    dest, mask, gateway, NULL));
+	return (vroute_doroute(env, type, dest, mask, gateway, 0));
 }
 
 int
 vroute_getcloneroute(struct iked *env, struct imsg *imsg)
 {
-	return (0);
+	struct sockaddr		*dst;
+	struct sockaddr_storage	 mask;
+	uint8_t			*ptr;
+	size_t			 left;
+	uint8_t			 rdomain;
+
+	ptr = (uint8_t *)imsg->data;
+	left = IMSG_DATA_SIZE(imsg);
+
+	if (left < sizeof(rdomain))
+		return (-1);
+	rdomain = *ptr;
+	ptr += sizeof(rdomain);
+	left -= sizeof(rdomain);
+
+	bzero(&mask, sizeof(mask));
+
+	if (left < sizeof(struct sockaddr))
+		return (-1);
+	dst = (struct sockaddr *)ptr;
+	if (left < SA_LEN(dst))
+		return (-1);
+	ptr += SA_LEN(dst);
+	left -= SA_LEN(dst);
+
+	/*
+	 * With rtnetlink(7) the host route is not cloned. Instead, we
+	 * add a RTN_THROW route for the host in the IKED routing table.
+	 */
+	return (vroute_doroute(env, RTM_NEWROUTE, dst, NULL, NULL, 1));
 }
 
 int
-vroute_doroute(struct iked *env, int flags, int addrs, int rdomain, uint8_t type,
-    struct sockaddr *dest, struct sockaddr *mask, struct sockaddr *addr, int *need_gw)
+vroute_doroute(struct iked *env, uint8_t type, struct sockaddr *dest,
+    struct sockaddr *mask, struct sockaddr *addr, int host)
 {
 	char			 dest_buf[NI_MAXHOST];
 	char			 addr_buf[NI_MAXHOST];
@@ -272,6 +303,7 @@ vroute_doroute(struct iked *env, int flags, int addrs, int rdomain, uint8_t type
 		return (-1);
 
 	bzero(&req, sizeof(req));
+
 	af = dest->sa_family;
 	req.hdr.nlmsg_type = type;
 	req.hdr.nlmsg_flags = NLM_F_REQUEST;
@@ -282,19 +314,21 @@ vroute_doroute(struct iked *env, int flags, int addrs, int rdomain, uint8_t type
 	rtm = NLMSG_DATA(&req.hdr);
 	rtm->rtm_family = af;
 	rtm->rtm_protocol = RTPROT_STATIC;
-	rtm->rtm_type = RTN_UNICAST;
+	if (host)
+		rtm->rtm_type = RTN_THROW;
+	else
+		rtm->rtm_type = RTN_UNICAST;
 	rtm->rtm_scope = RT_SCOPE_UNIVERSE;
-	rtm->rtm_table = IKED_RTM_TABLE;
+	rtm->rtm_table = IKED_RT_TABLE;
 
 	bzero(addr_buf, sizeof(addr_buf));
 
 	switch (af) {
 	case AF_INET:
-		rtm->rtm_dst_len = mask2prefixlen(mask);
+		rtm->rtm_dst_len = mask ? mask2prefixlen(mask) : 32;
 
 		in = (struct sockaddr_in *) dest;
 		nl_addattr(&req.hdr, RTA_DST, &in->sin_addr.s_addr, 4);
-
 		inet_ntop(af, &((struct sockaddr_in *)dest)->sin_addr,
 		    dest_buf, sizeof(dest_buf));
 
@@ -309,7 +343,7 @@ vroute_doroute(struct iked *env, int flags, int addrs, int rdomain, uint8_t type
 		}
 		break;
 	case AF_INET6:
-		rtm->rtm_dst_len = mask2prefixlen6(mask);
+		rtm->rtm_dst_len = mask ? mask2prefixlen6(mask) : 128;
 
 		in6 = (struct sockaddr_in6 *) dest;
 		nl_addattr(&req.hdr, RTA_DST, &in6->sin6_addr.s6_addr, 16);
@@ -331,7 +365,6 @@ vroute_doroute(struct iked *env, int flags, int addrs, int rdomain, uint8_t type
 		return (-1);
 	}
 send:
-
 	log_debug("%s: len: %u type: %s dst %s/%d gateway %s flags %x", __func__, req.hdr.nlmsg_len,
 	    type == RTM_NEWROUTE ? "RTM_NEWROUTE" : type == RTM_DELROUTE ? "RTM_DELROUTE" :
 	    type == RTM_GETROUTE ? "RTM_GETROUTE" : "unknown", dest_buf, rtm->rtm_dst_len, addr_buf,
@@ -397,6 +430,39 @@ vroute_doaddr(struct iked *env, int ifidx, struct sockaddr *addr,
 		nl_addattr(&req.hdr, IFA_LOCAL, &in6->sin6_addr.s6_addr, 16);
 		break;
 	}
+
+	if (send(ivr->ivr_rtsock, &req, req.hdr.nlmsg_len, 0) == -1)
+		log_warn("%s: send", __func__);
+
+	return (0);
+}
+
+static int
+nl_dorule(struct iked *env, int table, uint32_t prio, int family, int add)
+{
+	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct {
+		struct nlmsghdr		hdr;
+		uint8_t			buf[NL_BUFLEN];
+	} req;
+	struct rtmsg		*rtm;
+
+	bzero(&req, sizeof(req));
+
+	req.hdr.nlmsg_flags = NLM_F_REQUEST;
+	req.hdr.nlmsg_type = add ? RTM_NEWRULE : RTM_DELRULE;
+	req.hdr.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+	if (add)
+		req.hdr.nlmsg_flags |= NLM_F_CREATE | NLM_F_EXCL;
+
+	rtm = NLMSG_DATA(&req.hdr);
+	rtm->rtm_family = family;
+	rtm->rtm_protocol = RTPROT_BOOT;
+	rtm->rtm_scope = RT_SCOPE_UNIVERSE;
+	rtm->rtm_type = RTN_UNICAST;
+	rtm->rtm_table = IKED_RT_TABLE;
+
+	nl_addattr(&req.hdr, RTA_PRIORITY, &prio, sizeof(prio));
 
 	if (send(ivr->ivr_rtsock, &req, req.hdr.nlmsg_len, 0) == -1)
 		log_warn("%s: send", __func__);
