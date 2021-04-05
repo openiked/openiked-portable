@@ -744,8 +744,6 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 			return (-1);
 	}
 
-#ifdef HAVE_VROUTE
-
 	if (add) {
 		/* Add direct route to peer */
 		if (vroute_setcloneroute(env, getrtable(),
@@ -757,7 +755,6 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 		    0, NULL))
 			return (-1);
 	}
-#endif /* HAVE_VROUTE */
 
 	TAILQ_FOREACH(saflow, &sa->sa_flows, flow_entry) {
 		rdomain = saflow->flow_rdomain == -1 ?
