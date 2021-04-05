@@ -483,11 +483,11 @@ parent_dispatch_ikev2(int fd, struct privsep_proc *p, struct imsg *imsg)
 	case IMSG_IF_ADDADDR:
 	case IMSG_IF_DELADDR:
 		return (vroute_getaddr(env, imsg));
-#endif
-#ifdef HAVE_VROUTE
 	case IMSG_VROUTE_ADD:
 	case IMSG_VROUTE_DEL:
 		return (vroute_getroute(env, imsg));
+#endif
+#ifdef HAVE_VROUTE
 	case IMSG_VROUTE_CLONE:
 		return (vroute_getcloneroute(env, imsg));
 #endif

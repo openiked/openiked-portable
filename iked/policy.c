@@ -680,6 +680,9 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 	struct sockaddr_in	 mask;
 	struct sockaddr_in6	*addr6;
 	struct sockaddr_in6	 mask6;
+	struct iked_flow	*saflow;
+	struct sockaddr		*caddr;
+	int			 rdomain;
 
 	if (sa->sa_policy == NULL || sa->sa_policy->pol_iface == 0)
 		return (0);
@@ -741,11 +744,7 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 			return (-1);
 	}
 
-#endif
 #ifdef HAVE_VROUTE
-	struct iked_flow	*saflow;
-	struct sockaddr		*caddr;
-	int			 rdomain;
 
 	if (add) {
 		/* Add direct route to peer */
@@ -758,6 +757,7 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 		    0, NULL))
 			return (-1);
 	}
+#endif /* HAVE_VROUTE */
 
 	TAILQ_FOREACH(saflow, &sa->sa_flows, flow_entry) {
 		rdomain = saflow->flow_rdomain == -1 ?
@@ -789,7 +789,7 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 				return (-1);
 		}
 	}
-#endif
+#endif /* defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK) */
 
 	return (0);
 }
