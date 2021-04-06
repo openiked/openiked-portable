@@ -196,6 +196,7 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 	size_t			 left;
 	int			 type = 0;
 	uint8_t			 rdomain;
+	int			 host = 1;
 
 	ptr = (uint8_t *)imsg->data;
 	left = IMSG_DATA_SIZE(imsg);
@@ -234,6 +235,9 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 		socket_setport(gateway, 0);
 		ptr += SA_LEN(gateway);
 		left -= SA_LEN(gateway);
+
+		/* Flow routes are sent with mask + gateway */
+		host = 0;
 	}
 
 	switch(imsg->hdr.type) {
@@ -245,7 +249,7 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 		break;
 	}
 
-	return (vroute_doroute(env, type, dest, mask, gateway, 0));
+	return (vroute_doroute(env, type, dest, mask, gateway, host));
 }
 
 int
