@@ -34,6 +34,6 @@ It requires a working C compiler, standard library and headers,  a
 git clone https://github.com/openiked/openiked-portable.git
 cd openiked-portable
 mkdir build && cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
