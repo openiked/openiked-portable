@@ -500,7 +500,9 @@ parent_shutdown(struct iked *env)
 {
 	proc_kill(&env->sc_ps);
 
+#if defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK)
 	vroute_cleanup(env);
+#endif
 	free(env->sc_vroute);
 	free(env);
 
