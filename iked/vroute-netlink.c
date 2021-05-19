@@ -37,12 +37,34 @@ int vroute_setroute(struct iked *, uint8_t, struct sockaddr *, uint8_t,
 int vroute_doroute(struct iked *, uint8_t, struct sockaddr *,
     struct sockaddr *, struct sockaddr *, int);
 int vroute_doaddr(struct iked *, int, struct sockaddr *, struct sockaddr *, int);
+void vroute_cleanup(struct iked *);
+
+void vroute_insertaddr(struct iked *, int, struct sockaddr *, struct sockaddr *);
+void vroute_removeaddr(struct iked *, int, struct sockaddr *, struct sockaddr *);
+void vroute_insertroute(struct iked *, struct sockaddr *);
+void vroute_removeroute(struct iked *, struct sockaddr *);
+
+struct vroute_addr {
+	int				va_ifidx;
+	struct	sockaddr_storage	va_addr;
+	struct	sockaddr_storage	va_mask;
+	TAILQ_ENTRY(vroute_addr)	va_entry;
+};
+TAILQ_HEAD(vroute_addrs, vroute_addr);
+
+struct vroute_route {
+	struct	sockaddr_storage	vr_dest;
+	TAILQ_ENTRY(vroute_route)	vr_entry;
+};
+TAILQ_HEAD(vroute_routes, vroute_route);
 
 static int	nl_addattr(struct nlmsghdr *, int, void *, size_t);
 static int	nl_dorule(struct iked *, int, uint32_t, int, int);
 
 struct iked_vroute_sc {
-	int	ivr_rtsock;
+	struct vroute_addrs	ivr_addrs;
+	struct vroute_routes	ivr_routes;
+	int			ivr_rtsock;
 };
 
 #define NL_BUFLEN	1024
@@ -62,9 +84,35 @@ vroute_init(struct iked *env)
 	    NETLINK_ROUTE)) == -1)
 		fatal("%s: failed to create netlink socket", __func__);
 
+	TAILQ_INIT(&ivr->ivr_addrs);
+	TAILQ_INIT(&ivr->ivr_routes);
+
 	env->sc_vroute = ivr;
 	nl_dorule(env, IKED_RT_TABLE, IKED_RT_PRIO, AF_INET, 1);
 	nl_dorule(env, IKED_RT_TABLE, IKED_RT_PRIO, AF_INET6, 1);
+}
+
+void
+vroute_cleanup(struct iked *env)
+{
+	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_addr	*addr;
+	struct vroute_route	*route;
+
+	while ((addr = TAILQ_FIRST(&ivr->ivr_addrs))) {
+		vroute_doaddr(env, addr->va_ifidx,
+		    (struct sockaddr *)&addr->va_addr,
+		    (struct sockaddr *)&addr->va_mask, 0);
+		TAILQ_REMOVE(&ivr->ivr_addrs, addr, va_entry);
+		free(addr);
+	}
+
+	while ((route = TAILQ_FIRST(&ivr->ivr_routes))) {
+		vroute_doroute(env, RTM_DELROUTE,
+		    (struct sockaddr *)&route->vr_dest, NULL, NULL, 1);
+		TAILQ_REMOVE(&ivr->ivr_routes, route, vr_entry);
+		free(route);
+	}
 }
 
 int
@@ -73,7 +121,7 @@ vroute_getaddr(struct iked *env, struct imsg *imsg)
 	struct sockaddr		*addr, *mask;
 	uint8_t			*ptr;
 	size_t			 left;
-	int			 af;
+	int			 af, add;
 	unsigned int		 ifidx;
 
 	ptr = imsg->data;
@@ -107,8 +155,79 @@ vroute_getaddr(struct iked *env, struct imsg *imsg)
 	ptr += sizeof(ifidx);
 	left -= sizeof(ifidx);
 
+	add = (imsg->hdr.type == IMSG_IF_ADDADDR);
+	/* Store address for cleanup */
+	if (add)
+		vroute_insertaddr(env, ifidx, addr, mask);
+	else
+		vroute_removeaddr(env, ifidx, addr, mask);
+
 	return (vroute_doaddr(env, ifidx, addr, mask,
 	    imsg->hdr.type == IMSG_IF_ADDADDR));
+}
+
+void
+vroute_insertroute(struct iked *env, struct sockaddr *dest)
+{
+	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_route	*route;
+
+	route = calloc(1, sizeof(*route));
+	if (route == NULL)
+		fatalx("%s: calloc.", __func__);
+
+	memcpy(&route->vr_dest, dest, SA_LEN(dest));
+
+	TAILQ_INSERT_TAIL(&ivr->ivr_routes, route, vr_entry);
+}
+
+void
+vroute_removeroute(struct iked *env, struct sockaddr *dest)
+{
+	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_route	*route;
+
+	TAILQ_FOREACH(route, &ivr->ivr_routes, vr_entry) {
+		if (sockaddr_cmp(dest, (struct sockaddr *)&route->vr_dest, -1))
+			continue;
+		TAILQ_REMOVE(&ivr->ivr_routes, route, vr_entry);
+	}
+}
+
+void
+vroute_insertaddr(struct iked *env, int ifidx, struct sockaddr *addr,
+    struct sockaddr *mask)
+{
+	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_addr	*vaddr;
+
+	vaddr = calloc(1, sizeof(*vaddr));
+	if (vaddr == NULL)
+		fatalx("%s: calloc.", __func__);
+
+	memcpy(&vaddr->va_addr, addr, SA_LEN(addr));
+	memcpy(&vaddr->va_mask, mask, SA_LEN(mask));
+	vaddr->va_ifidx = ifidx;
+
+	TAILQ_INSERT_TAIL(&ivr->ivr_addrs, vaddr, va_entry);
+}
+
+void
+vroute_removeaddr(struct iked *env, int ifidx, struct sockaddr *addr,
+    struct sockaddr *mask)
+{
+	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_addr	*vaddr;
+
+	TAILQ_FOREACH(vaddr, &ivr->ivr_addrs, va_entry) {
+		if (sockaddr_cmp(addr, (struct sockaddr *)&vaddr->va_addr, -1))
+			continue;
+		if (sockaddr_cmp(mask, (struct sockaddr *)&vaddr->va_mask, -1))
+			continue;
+		if (ifidx != vaddr->va_ifidx)
+			continue;
+		TAILQ_REMOVE(&ivr->ivr_addrs, vaddr, va_entry);
+	}
 }
 
 int
@@ -245,6 +364,7 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 		type = RTM_NEWROUTE;
 		break;
 	case IMSG_VROUTE_DEL:
+		vroute_removeroute(env, dest);
 		type = RTM_DELROUTE;
 		break;
 	}
@@ -279,6 +399,8 @@ vroute_getcloneroute(struct iked *env, struct imsg *imsg)
 		return (-1);
 	ptr += SA_LEN(dst);
 	left -= SA_LEN(dst);
+
+	vroute_insertroute(env, (struct sockaddr *)&dst);
 
 	/*
 	 * With rtnetlink(7) the host route is not cloned. Instead, we
