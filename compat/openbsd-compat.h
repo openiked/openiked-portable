@@ -264,4 +264,20 @@ typedef int evutil_socket_t;
 #define __packed	__attribute__((__packed__))
 #endif
 
+#if defined(HAVE_APPLE_NATT) && !defined(SADB_X_EXT_NATT)
+/*
+ * These are hidden in Apple XNU's private pfkeyv2.h header
+ */
+#define SADB_X_EXT_NATT			0x0002	/* Enable UDP encapsulation */
+#define SADB_X_EXT_NATT_KEEPALIVE	0x0004	/* Send NAT-T keepalives */
+#define SADB_X_EXT_NATT_MULTIPLEUSERS	0x0008	/* Use for VPN gateways */
+#define SADB_X_EXT_NATT_DETECTED_PEER	0x1000	/* Opposite of KEEPALIVE */
+
+struct sadb_sa_natt {
+	u_int16_t	 sadb_sa_natt_port;
+	u_int16_t	 sadb_reserved;
+	u_int32_t	 sadb_reserved1;
+};
+#endif
+
 #endif /* !_OPENBSD_COMPAT_H */
