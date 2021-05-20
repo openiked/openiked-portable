@@ -180,11 +180,16 @@ proc_open(struct privsep *ps, struct privsep_proc *p,
 				if (pa->pp_pipes[procs[proc].p_id][j] != -1)
 					continue;
 
+#if defined(__APPLE__)
+				if (socketpair(AF_UNIX, SOCK_STREAM,
+				    PF_UNSPEC, fds) == -1)
+					fatal("socketpair");
+#else
 				if (socketpair(AF_UNIX,
 				    SOCK_STREAM | SOCK_NONBLOCK,
 				    PF_UNSPEC, fds) == -1)
 					fatal("socketpair");
-
+#endif
 				pa->pp_pipes[procs[proc].p_id][j] = fds[0];
 				pb->pp_pipes[src][i] = fds[1];
 			}
