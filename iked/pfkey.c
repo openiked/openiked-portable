@@ -43,7 +43,7 @@
 #include "ikev2.h"
 
 #define ROUNDUP(x) (((x) + (PFKEYV2_CHUNK - 1)) & ~(PFKEYV2_CHUNK - 1))
-#define IOV_CNT 27
+#define IOV_CNT 28
 
 #define PFKEYV2_CHUNK sizeof(uint64_t)
 #define PFKEY_REPLY_TIMEOUT 1000
@@ -865,14 +865,10 @@ pfkey_sa(int sd, uint8_t satype, uint8_t action, struct iked_childsa *sa)
 		    ntohs(udpencap.sadb_x_udpencap_port));
 #elif defined(HAVE_APPLE_NATT)
 		sadb.sadb_sa_flags |= SADB_X_EXT_NATT;
-		/* XXX check NAT detection for local/peer hash instead */
-		if (sa->csa_dir == IPSP_DIRECTION_OUT)
-			sadb.sadb_sa_flags |= SADB_X_EXT_NATT_KEEPALIVE;
-		else
-			sadb.sadb_sa_flags |= SADB_X_EXT_NATT_DETECTED_PEER;
 		natt.sadb_sa_natt_port =
 		    ntohs(sa->csa_ikesa->sa_peer.addr_port);
-
+		natt.sadb_sa_natt_src_port =
+		    sa->csa_ikesa->sa_local.addr_port;
 		log_debug("%s: udpencap port %u", __func__,
 		    natt.sadb_sa_natt_port);
 #else
