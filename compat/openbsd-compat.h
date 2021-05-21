@@ -275,8 +275,12 @@ typedef int evutil_socket_t;
 
 struct sadb_sa_natt {
 	u_int16_t	 sadb_sa_natt_port;
-	u_int16_t	 sadb_reserved;
-	u_int32_t	 sadb_reserved1;
+	union {
+		u_int16_t	 sadb_reserved0;
+		u_int16_t	 sadb_sa_natt_interval;
+	};
+	u_int16_t	 sadb_sa_natt_offload_interval;
+	u_int16_t	 sadb_sa_natt_src_port;
 };
 #endif
 
