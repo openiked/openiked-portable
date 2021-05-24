@@ -92,6 +92,9 @@ static const struct pfkey_constmap pfkey_encr[] = {
 #ifdef SADB_X_EALG_AESGCM16
 	{ SADB_X_EALG_AESGCM16,	IKEV2_XFORMENCR_AES_GCM_16 },
 #endif
+#ifdef SADB_X_EALG_AES_GCM
+	{ SADB_X_EALG_AES_GCM,	IKEV2_XFORMENCR_AES_GCM_16 },
+#endif
 #ifdef SADB_X_EALG_AESGMAC
 	{ SADB_X_EALG_AESGMAC,	IKEV2_XFORMENCR_NULL_AES_GMAC },
 #endif

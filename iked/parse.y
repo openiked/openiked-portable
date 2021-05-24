@@ -184,7 +184,9 @@ struct iked_transform ikev2_default_esp_transforms_noauth[] = {
 	{ IKEV2_XFORMTYPE_ENCR,	IKEV2_XFORMENCR_AES_GCM_16, 128 },
 	{ IKEV2_XFORMTYPE_ENCR,	IKEV2_XFORMENCR_AES_GCM_16, 256 },
 	{ IKEV2_XFORMTYPE_DH,	IKEV2_XFORMDH_NONE },
+#if defined(SADB_X_SAFLAGS_ESN) && !defined(HAVE_APPLE_NATT)
 	{ IKEV2_XFORMTYPE_ESN,	IKEV2_XFORMESN_ESN },
+#endif
 	{ IKEV2_XFORMTYPE_ESN,	IKEV2_XFORMESN_NONE },
 	{ 0 }
 };
@@ -2739,7 +2741,7 @@ create_ike(char *name, int af, uint8_t ipproto,
 
 	if (ipsec_sa == NULL || ipsec_sa->nxfs == 0) {
 	/* XXX: Linux pfkey does not support AES-GCM */
-#if !defined(HAVE_LINUX_PFKEY_H) && !defined(HAVE_APPLE_NATT)
+#if !defined(HAVE_LINUX_PFKEY_H)
 		if ((p = calloc(1, sizeof(*p))) == NULL)
 			err(1, "%s", __func__);
 		p->prop_id = ipsecpropid++;
@@ -2782,7 +2784,7 @@ create_ike(char *name, int af, uint8_t ipproto,
 			}
 
 			if (!auth) {
-#if !defined(HAVE_LINUX_PFKEY_H) && !defined(HAVE_APPLE_NATT)
+#if !defined(HAVE_LINUX_PFKEY_H)
 				if ((p = calloc(1, sizeof(*p))) == NULL)
 					err(1, "%s", __func__);
 
