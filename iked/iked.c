@@ -21,6 +21,10 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <sys/uio.h>
+#ifdef __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -263,6 +267,11 @@ parent_configure(struct iked *env)
 
 	bzero(&ss, sizeof(ss));
 	ss.ss_family = AF_INET;
+
+#ifdef __APPLE__
+	int nattport = env->sc_nattport;
+	sysctlbyname("net.inet.ipsec.esp_port", NULL, NULL, &nattport, sizeof(nattport));
+#endif
 
 	/* see comment on config_setsocket() */
 	if (env->sc_nattmode != NATT_FORCE)
