@@ -88,6 +88,8 @@ list(APPEND SRCS
 	proc.c
 	smult_curve25519_ref.c
 	timer.c
+	crypto_hash.c
+	sntrup761.c
 	# Generated files
 	${CMAKE_CURRENT_BINARY_DIR}/parse.c
 )
