@@ -400,7 +400,7 @@ vroute_getcloneroute(struct iked *env, struct imsg *imsg)
 	ptr += SA_LEN(dst);
 	left -= SA_LEN(dst);
 
-	vroute_insertroute(env, (struct sockaddr *)&dst);
+	vroute_insertroute(env, dst);
 
 	/*
 	 * With rtnetlink(7) the host route is not cloned. Instead, we

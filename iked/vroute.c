@@ -479,8 +479,9 @@ vroute_getcloneroute(struct iked *env, struct imsg *imsg)
 	if (need_gw)
 		flags |= RTF_GATEWAY;
 
-	vroute_insertroute(env, rdomain, (struct sockaddr *)&dest,
-	    (struct sockaddr *)&mask);
+	memcpy(&dest, ptr, dst->sa_len);
+	socket_setport((struct sockaddr *)&dest, 0);
+	vroute_insertroute(env, rdomain, (struct sockaddr *)&dest, NULL);
 
 	/* Set explicit route to peer with gateway addr*/
 	addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
