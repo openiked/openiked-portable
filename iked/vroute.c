@@ -486,7 +486,8 @@ vroute_getcloneroute(struct iked *env, struct imsg *imsg)
 	/* Set explicit route to peer with gateway addr*/
 	addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
 	return (vroute_doroute(env, flags, addrs, rdomain, RTM_ADD,
-	    dst, (struct sockaddr *)&mask, (struct sockaddr *)&addr, NULL));
+	    (struct sockaddr *)&dest, (struct sockaddr *)&mask,
+	    (struct sockaddr *)&addr, NULL));
 }
 
 int
