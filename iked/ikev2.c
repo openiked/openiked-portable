@@ -7003,10 +7003,13 @@ ikev2_cp_setaddr_pool(struct iked *env, struct iked_sa *sa,
 		return (-1);
 	}
 
-	if (lower == 0)
-		lower = 1;
 	/* Note that start, upper and host are in HOST byte order */
 	upper = ntohl(~mask);
+	/* skip .0 address if possible */
+	if (lower < upper && lower == 0)
+		lower = 1;
+	if (upper < lower)
+		upper = lower;
 	/* Randomly select start from [lower, upper-1] */
 	start = arc4random_uniform(upper - lower) + lower;
 
