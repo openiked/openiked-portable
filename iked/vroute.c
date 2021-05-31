@@ -465,7 +465,7 @@ vroute_getcloneroute(struct iked *env, struct imsg *imsg)
 	dst = (struct sockaddr *)ptr;
 	if (left < dst->sa_len)
 		return (-1);
-	memcpy(&dest, ptr, dst->sa_len);
+	memcpy(&dest, dst, dst->sa_len);
 	ptr += dst->sa_len;
 	left -= dst->sa_len;
 
@@ -479,7 +479,7 @@ vroute_getcloneroute(struct iked *env, struct imsg *imsg)
 	if (need_gw)
 		flags |= RTF_GATEWAY;
 
-	memcpy(&dest, ptr, dst->sa_len);
+	memcpy(&dest, dst, dst->sa_len);
 	socket_setport((struct sockaddr *)&dest, 0);
 	vroute_insertroute(env, rdomain, (struct sockaddr *)&dest, NULL);
 
