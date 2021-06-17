@@ -2412,6 +2412,7 @@ out:
 			break;
 		}
 		flow.flow_dir = sa_pol->sadb_x_policy_dir;
+		flow.flow_rdomain = -1;
 
 		iov_cnt = 0;
 
@@ -2467,6 +2468,18 @@ out:
 		    flow.flow_dst.addr_port) == -1) {
 			log_debug("%s: invalid dst address", __func__);
 			free(reply);
+			break;
+		}
+
+		switch (hdr->sadb_msg_satype) {
+		case SADB_SATYPE_AH:
+			flow.flow_saproto = IKEV2_SAPROTO_AH;
+			break;
+		case SADB_SATYPE_ESP:
+			flow.flow_saproto = IKEV2_SAPROTO_ESP;
+			break;
+		case SADB_X_SATYPE_IPCOMP:
+			flow.flow_saproto = IKEV2_SAPROTO_IPCOMP;
 			break;
 		}
 
