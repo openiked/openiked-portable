@@ -116,6 +116,51 @@ vroute_cleanup(struct iked *env)
 }
 
 int
+vroute_setaddr(struct iked *env, int add, struct sockaddr *addr,
+    int mask, unsigned int ifidx)
+{
+	struct iovec		 iov[4];
+	int			 iovcnt;
+	struct sockaddr_in	 mask4;
+	struct sockaddr_in6	 mask6;
+
+	iovcnt = 0;
+	iov[0].iov_base = addr;
+	iov[0].iov_len = SA_LEN(addr);
+	iovcnt++;
+
+	switch(addr->sa_family) {
+	case AF_INET:
+		bzero(&mask, sizeof(mask));
+		mask4.sin_addr.s_addr = prefixlen2mask(mask ? mask : 32);
+		mask4.sin_family = AF_INET;
+
+		iov[1].iov_base = &mask4;
+		iov[1].iov_len = sizeof(mask4);
+		iovcnt++;
+		break;
+	case AF_INET6:
+		bzero(&mask6, sizeof(mask6));
+		prefixlen2mask6(mask ? mask : 128,
+		    (uint32_t *)&mask6.sin6_addr.s6_addr);
+		mask6.sin6_family = AF_INET6;
+		iov[1].iov_base = &mask6;
+		iov[1].iov_len = sizeof(mask6);
+		iovcnt++;
+		break;
+	default:
+		return -1;
+	}
+
+	iov[2].iov_base = &ifidx;
+	iov[2].iov_len = sizeof(ifidx);
+	iovcnt++;
+
+	return (proc_composev(&env->sc_ps, PROC_PARENT,
+	    add ? IMSG_IF_ADDADDR : IMSG_IF_DELADDR, iov, iovcnt));
+}
+
+int
 vroute_getaddr(struct iked *env, struct imsg *imsg)
 {
 	struct sockaddr		*addr, *mask;
