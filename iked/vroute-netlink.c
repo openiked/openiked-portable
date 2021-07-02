@@ -622,7 +622,7 @@ nl_dorule(struct iked *env, int table, uint32_t prio, int family, int add)
 
 	req.hdr.nlmsg_flags = NLM_F_REQUEST;
 	req.hdr.nlmsg_type = add ? RTM_NEWRULE : RTM_DELRULE;
-	req.hdr.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+	req.hdr.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
 	if (add)
 		req.hdr.nlmsg_flags |= NLM_F_CREATE | NLM_F_EXCL;
 
