@@ -211,6 +211,20 @@ vroute_getaddr(struct iked *env, struct imsg *imsg)
 	    imsg->hdr.type == IMSG_IF_ADDADDR));
 }
 
+
+int
+vroute_setdns(struct iked *env, int add, struct sockaddr *addr,
+    unsigned int ifidx)
+{
+	return (0);
+}
+
+int
+vroute_getdns(struct iked *env, struct imsg *imsg)
+{
+	return (0);
+}
+
 void
 vroute_insertroute(struct iked *env, struct sockaddr *dest)
 {
