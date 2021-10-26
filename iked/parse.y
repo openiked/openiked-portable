@@ -1,4 +1,4 @@
-/*	$OpenBSD: parse.y,v 1.134 2021/10/15 15:01:27 naddy Exp $	*/
+/*	$OpenBSD: parse.y,v 1.135 2021/10/26 17:31:22 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -383,7 +383,7 @@ void			 copy_transforms(unsigned int,
 			    const struct ipsec_xf **, unsigned int,
 			    struct iked_transform **, unsigned int *,
 			    struct iked_transform *, size_t);
-int			 create_ike(char *, int, uint8_t,
+int			 create_ike(char *, int, struct ipsec_addr_wrap *,
 			    int, struct ipsec_hosts *,
 			    struct ipsec_hosts *, struct ipsec_mode *,
 			    struct ipsec_mode *, uint8_t,
@@ -397,9 +397,9 @@ uint8_t			 x2i(unsigned char *);
 int			 parsekey(unsigned char *, size_t, struct iked_auth *);
 int			 parsekeyfile(char *, struct iked_auth *);
 void			 iaw_free(struct ipsec_addr_wrap *);
-static int		 create_flow(struct iked_policy *pol, struct ipsec_addr_wrap *ipa,
+static int		 create_flow(struct iked_policy *pol, int, struct ipsec_addr_wrap *ipa,
 			    struct ipsec_addr_wrap *ipb);
-static int		 expand_flows(struct iked_policy *, struct ipsec_addr_wrap *,
+static int		 expand_flows(struct iked_policy *, int, struct ipsec_addr_wrap *,
 			    struct ipsec_addr_wrap *);
 static struct ipsec_addr_wrap *
 			 expand_keyword(struct ipsec_addr_wrap *);
@@ -416,7 +416,6 @@ typedef struct {
 		uint8_t			 ikemode;
 		uint8_t			 dir;
 		uint8_t			 satype;
-		uint8_t			 proto;
 		char			*string;
 		uint16_t		 port;
 		struct ipsec_hosts	*hosts;
@@ -424,6 +423,7 @@ typedef struct {
 		struct ipsec_addr_wrap	*anyhost;
 		struct ipsec_addr_wrap	*host;
 		struct ipsec_addr_wrap	*cfg;
+		struct ipsec_addr_wrap	*proto;
 		struct {
 			char		*srcid;
 			char		*dstid;
@@ -458,8 +458,7 @@ typedef struct {
 %token	<v.number>		NUMBER
 %type	<v.string>		string
 %type	<v.satype>		satype
-%type	<v.proto>		proto
-%type	<v.number>		protoval
+%type	<v.proto>		proto proto_list protoval
 %type	<v.hosts>		hosts hosts_list
 %type	<v.port>		port
 %type	<v.number>		portval af rdomain
@@ -639,10 +638,23 @@ af		: /* empty */			{ $$ = AF_UNSPEC; }
 		| INET6				{ $$ = AF_INET6; }
 		;
 
-proto		: /* empty */			{ $$ = 0; }
+proto		: /* empty */			{ $$ = NULL; }
 		| PROTO protoval		{ $$ = $2; }
-		| PROTO ESP			{ $$ = IPPROTO_ESP; }
-		| PROTO AH			{ $$ = IPPROTO_AH; }
+		| PROTO '{' proto_list '}'	{ $$ = $3; }
+		;
+
+proto_list	: protoval			{ $$ = $1; }
+		| proto_list comma protoval	{
+			if ($3 == NULL)
+				$$ = $1;
+			else if ($1 == NULL)
+				$$ = $3;
+			else {
+				$1->tail->next = $3;
+				$1->tail = $3->tail;
+				$$ = $1;
+			}
+		}
 		;
 
 protoval	: STRING			{
@@ -653,7 +665,12 @@ protoval	: STRING			{
 				yyerror("unknown protocol: %s", $1);
 				YYERROR;
 			}
-			$$ = p->p_proto;
+
+			if (($$ = calloc(1, sizeof(*$$))) == NULL)
+				err(1, "protoval: calloc");
+
+			$$->type = p->p_proto;
+			$$->tail = $$;
 			free($1);
 		}
 		| NUMBER			{
@@ -661,6 +678,11 @@ protoval	: STRING			{
 				yyerror("protocol outside range");
 				YYERROR;
 			}
+			if (($$ = calloc(1, sizeof(*$$))) == NULL)
+				err(1, "protoval: calloc");
+
+			$$->type = $1;
+			$$->tail = $$;
 		}
 		;
 
@@ -2468,7 +2490,7 @@ copy_transforms(unsigned int type,
 }
 
 int
-create_ike(char *name, int af, uint8_t ipproto,
+create_ike(char *name, int af, struct ipsec_addr_wrap *ipproto,
     int rdomain, struct ipsec_hosts *hosts,
     struct ipsec_hosts *peers, struct ipsec_mode *ike_sa,
     struct ipsec_mode *ipsec_sa, uint8_t saproto,
@@ -2478,7 +2500,7 @@ create_ike(char *name, int af, uint8_t ipproto,
     struct ipsec_addr_wrap *ikecfg, char *iface)
 {
 	char			 idstr[IKED_ID_SIZE];
-	struct ipsec_addr_wrap	*ipa, *ipb;
+	struct ipsec_addr_wrap	*ipa, *ipb, *ipp;
 	struct iked_auth	*ikeauth;
 	struct iked_policy	 pol;
 	struct iked_proposal	*p, *ptmp;
@@ -2497,7 +2519,15 @@ create_ike(char *name, int af, uint8_t ipproto,
 	pol.pol_certreqtype = env->sc_certreqtype;
 	pol.pol_af = af;
 	pol.pol_saproto = saproto;
-	pol.pol_ipproto = ipproto;
+	for (i = 0, ipp = ipproto; ipp; ipp = ipp->next, i++) {
+		if (i > IKED_IPPROTO_MAX) {
+			yyerror("too many protocols");
+			return (-1);
+		}
+		pol.pol_ipproto[i] = ipp->type;
+		pol.pol_nipproto++;
+	}
+	
 	pol.pol_flags = flags;
 	pol.pol_rdomain = rdomain;
 	memcpy(&pol.pol_auth, authtype, sizeof(struct iked_auth));
@@ -2852,13 +2882,15 @@ create_ike(char *name, int af, uint8_t ipproto,
 		}
 	}
 
-	if (hosts == NULL || hosts->src == NULL || hosts->dst == NULL)
-		fatalx("create_ike: no traffic selectors/flows");
-
 	for (ipa = hosts->src, ipb = hosts->dst; ipa && ipb;
-	    ipa = ipa->next, ipb = ipb->next)
-		if (expand_flows(&pol, ipa, ipb))
-			fatalx("create_ike: invalid flow");
+	    ipa = ipa->next, ipb = ipb->next) {
+		for (j = 0; j < pol.pol_nipproto; j++)
+			if (expand_flows(&pol, pol.pol_ipproto[j], ipa, ipb))
+				fatalx("create_ike: invalid flow");
+		if (pol.pol_nipproto == 0)
+			if (expand_flows(&pol, 0, ipa, ipb))
+				fatalx("create_ike: invalid flow");
+	}
 
 	for (j = 0, ipa = ikecfg; ipa; ipa = ipa->next, j++) {
 		if (j >= IKED_CFG_MAX)
@@ -2947,6 +2979,7 @@ done:
 		free(hosts);
 	}
 	iaw_free(ikecfg);
+	iaw_free(ipproto);
 	RB_FOREACH_SAFE(flow, iked_flows, &pol.pol_flows, ftmp) {
 		RB_REMOVE(iked_flows, &pol.pol_flows, flow);
 		free(flow);
@@ -2958,7 +2991,7 @@ done:
 }
 
 static int
-create_flow(struct iked_policy *pol, struct ipsec_addr_wrap *ipa,
+create_flow(struct iked_policy *pol, int proto, struct ipsec_addr_wrap *ipa,
     struct ipsec_addr_wrap *ipb)
 {
 	struct iked_flow	*flow;
@@ -2998,8 +3031,8 @@ create_flow(struct iked_policy *pol, struct ipsec_addr_wrap *ipa,
 	}
 
 	flow->flow_dir = IPSP_DIRECTION_OUT;
+	flow->flow_ipproto = proto;
 	flow->flow_saproto = pol->pol_saproto;
-	flow->flow_ipproto = pol->pol_ipproto;
 	flow->flow_rdomain = pol->pol_rdomain;
 	flow->flow_transport = pol->pol_flags & IKED_POLICY_TRANSPORT;
 
@@ -3014,11 +3047,15 @@ create_flow(struct iked_policy *pol, struct ipsec_addr_wrap *ipa,
 }
 
 static int
-expand_flows(struct iked_policy *pol, struct ipsec_addr_wrap *src,
+expand_flows(struct iked_policy *pol, int proto, struct ipsec_addr_wrap *src,
     struct ipsec_addr_wrap *dst)
 {
 	struct ipsec_addr_wrap	*ipa = NULL, *ipb = NULL;
 	int			 ret = -1;
+	int			 srcaf, dstaf;
+
+	srcaf = src->af;
+	dstaf = dst->af;
 
 	if (src->af == AF_UNSPEC &&
 	    dst->af == AF_UNSPEC) {
@@ -3028,7 +3065,7 @@ expand_flows(struct iked_policy *pol, struct ipsec_addr_wrap *src,
 		ipb = expand_keyword(dst);
 		if (!ipa || !ipb)
 			goto done;
-		if (create_flow(pol, ipa, ipb))
+		if (create_flow(pol, proto, ipa, ipb))
 			goto done;
 
 		iaw_free(ipa);
@@ -3038,26 +3075,28 @@ expand_flows(struct iked_policy *pol, struct ipsec_addr_wrap *src,
 		ipb = expand_keyword(dst);
 		if (!ipa || !ipb)
 			goto done;
-		if (create_flow(pol, ipa, ipb))
+		if (create_flow(pol, proto, ipa, ipb))
 			goto done;
 	} else if (src->af == AF_UNSPEC) {
 		src->af = dst->af;
 		ipa = expand_keyword(src);
 		if (!ipa)
 			goto done;
-		if (create_flow(pol, ipa, dst))
+		if (create_flow(pol, proto, ipa, dst))
 			goto done;
 	} else if (dst->af == AF_UNSPEC) {
 		dst->af = src->af;
 		ipa = expand_keyword(dst);
 		if (!ipa)
 			goto done;
-		if (create_flow(pol, src, ipa))
+		if (create_flow(pol, proto, src, ipa))
 			goto done;
-	} else if (create_flow(pol, src, dst))
+	} else if (create_flow(pol, proto, src, dst))
 		goto done;
 	ret = 0;
  done:
+	src->af = srcaf;
+	dst->af = dstaf;
 	iaw_free(ipa);
 	iaw_free(ipb);
 	return (ret);
