@@ -865,3 +865,26 @@ print_verbose(const char *emsg, ...)
 		va_end(ap);
 	}
 }
+
+int
+run_command(const char *cmd, ...)
+{
+	int	r;
+	va_list	args;
+
+	va_start(args, cmd);
+	r = run_command_va(cmd, args);
+	va_end(args);
+
+	return r;
+}
+
+int
+run_command_va(const char *cmd, va_list args)
+{
+	char cmdline[1024];
+
+	vsprintf(cmdline, cmd, args);
+	log_debug("%s: \"%s\"", __func__, cmdline);
+	return system(cmdline);
+}
