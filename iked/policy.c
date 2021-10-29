@@ -681,13 +681,6 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 	if (sa->sa_policy == NULL || sa->sa_policy->pol_iface == 0)
 		return (0);
 
-	if (sa->sa_cp_dns) {
-		if (vroute_setdns(env, add,
-		    (struct sockaddr *)&sa->sa_cp_dns->addr,
-		    sa->sa_policy->pol_iface) != 0)
-			return (-1);
-	}
-
 	if (!sa->sa_cp_addr && !sa->sa_cp_addr6)
 		return (0);
 
@@ -745,6 +738,13 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 			    saflow->flow_dst.addr_mask, caddr))
 				return (-1);
 		}
+	}
+
+	if (sa->sa_cp_dns) {
+		if (vroute_setdns(env, add,
+		    (struct sockaddr *)&sa->sa_cp_dns->addr,
+		    sa->sa_policy->pol_iface) != 0)
+			return (-1);
 	}
 #endif /* defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK) */
 
