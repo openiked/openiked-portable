@@ -667,7 +667,7 @@ sa_address(struct iked_sa *sa, struct iked_addr *addr, struct sockaddr *peer)
 int
 sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 {
-#if defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK)
+#if defined(HAVE_VROUTE)
 	struct iked_flow	*saflow;
 	struct sockaddr		*caddr;
 	int			 rdomain;
@@ -740,7 +740,7 @@ sa_configure_iface(struct iked *env, struct iked_sa *sa, int add)
 		    sa->sa_policy->pol_iface) != 0)
 			return (-1);
 	}
-#endif /* defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK) */
+#endif /* defined(HAVE_VROUTE) */
 
 	return (0);
 }

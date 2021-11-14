@@ -223,7 +223,7 @@ main(int argc, char *argv[])
 
 	proc_listen(ps, procs, nitems(procs));
 
-#if defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK)
+#if defined(HAVE_VROUTE)
 	vroute_init(env);
 #endif
 
@@ -487,7 +487,7 @@ parent_dispatch_ikev2(int fd, struct privsep_proc *p, struct imsg *imsg)
 	struct iked	*env = p->p_ps->ps_env;
 
 	switch (imsg->hdr.type) {
-#if defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK)
+#if defined(HAVE_VROUTE)
 	case IMSG_IF_ADDADDR:
 	case IMSG_IF_DELADDR:
 		return (vroute_getaddr(env, imsg));
@@ -512,7 +512,7 @@ parent_shutdown(struct iked *env)
 {
 	proc_kill(&env->sc_ps);
 
-#if defined(HAVE_VROUTE) || defined(HAVE_VROUTE_NETLINK)
+#if defined(HAVE_VROUTE)
 	vroute_cleanup(env);
 #endif
 	free(env->sc_vroute);
