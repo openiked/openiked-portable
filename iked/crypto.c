@@ -1,4 +1,4 @@
-/*	$OpenBSD: crypto.c,v 1.34 2021/02/25 20:13:24 tobhe Exp $	*/
+/*	$OpenBSD: crypto.c,v 1.35 2021/11/18 22:42:02 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -959,6 +959,8 @@ dsa_init(struct iked_dsa *dsa, const void *buf, size_t len)
 		    EVP_PKEY_CTX_set_rsa_pss_saltlen(pctx, -1) <= 0)
 			return (-1);
 	}
+	if (_dsa_sign_encode(dsa, NULL, 0, NULL) < 0)
+		return (-1);
 
 	return (ret == 1 ? 0 : -1);
 }
