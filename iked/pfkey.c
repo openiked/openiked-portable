@@ -1,4 +1,4 @@
-/*	$OpenBSD: pfkey.c,v 1.78 2021/11/24 20:48:00 tobhe Exp $	*/
+/*	$OpenBSD: pfkey.c,v 1.79 2021/11/24 21:06:21 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -133,7 +133,7 @@ int	pfkey_sa(struct iked *, uint8_t, uint8_t, struct iked_childsa *);
 int	pfkey_sa_getspi(struct iked *, uint8_t, struct iked_childsa *, uint32_t *);
 int	pfkey_sagroup(struct iked *, uint8_t, uint8_t,
 	    struct iked_childsa *, struct iked_childsa *);
-int	pfkey_write(int, struct sadb_msg *, struct iovec *, int,
+int	pfkey_write(struct iked *, struct sadb_msg *, struct iovec *, int,
 	    uint8_t **, ssize_t *);
 int	pfkey_reply(int, uint8_t **, ssize_t *);
 void	pfkey_dispatch(int, short, void *);
@@ -477,7 +477,7 @@ pfkey_flow(struct iked *env, uint8_t satype, uint8_t action, struct iked_flow *f
 
 #undef PAD
 
-	ret = pfkey_write(env->sc_pfkey, &smsg, iov, iov_cnt, NULL, NULL);
+	ret = pfkey_write(env, &smsg, iov, iov_cnt, NULL, NULL);
 
 	free(sa_srcid);
 	free(sa_dstid);
@@ -667,7 +667,7 @@ pfkey_flow(struct iked *env, uint8_t satype, uint8_t action, struct iked_flow *f
 #undef PAD
 
 	ret = -1;
-	if (pfkey_write(env->sc_pfkey, &smsg, iov, iov_cnt, &reply, &rlen) != 0)
+	if (pfkey_write(env, &smsg, iov, iov_cnt, &reply, &rlen) != 0)
 		goto done;
 
 	if ((sa_polid = pfkey_find_ext(reply, rlen,
@@ -1196,7 +1196,7 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 
 #undef PAD
 
-	ret = pfkey_write(env->sc_pfkey, &smsg, iov, iov_cnt, NULL, NULL);
+	ret = pfkey_write(env, &smsg, iov, iov_cnt, NULL, NULL);
 
 	free(sa_srcid);
 	free(sa_dstid);
@@ -1333,7 +1333,7 @@ pfkey_sa_lookup(struct iked *env, struct iked_childsa *sa, uint64_t *last_used)
 	}
 #endif
 
-	if ((ret = pfkey_write(env->sc_pfkey, &smsg, iov, iov_cnt, &data, &n)) != 0)
+	if ((ret = pfkey_write(env, &smsg, iov, iov_cnt, &data, &n)) != 0)
 		return (-1);
 
 	msg = (struct sadb_msg *)data;
@@ -1476,7 +1476,7 @@ pfkey_sa_getspi(struct iked *env, uint8_t satype, struct iked_childsa *sa,
 
 	*spip = 0;
 
-	if ((ret = pfkey_write(env->sc_pfkey, &smsg, iov, iov_cnt, &data, &n)) != 0)
+	if ((ret = pfkey_write(env, &smsg, iov, iov_cnt, &data, &n)) != 0)
 		return (-1);
 
 	msg = (struct sadb_msg *)data;
@@ -1664,15 +1664,16 @@ pfkey_sagroup(struct iked *env, uint8_t satype1, uint8_t action,
 
 #undef PAD
 
-	return (pfkey_write(env->sc_pfkey, &smsg, iov, iov_cnt, NULL, NULL));
+	return (pfkey_write(env, &smsg, iov, iov_cnt, NULL, NULL));
 }
 #endif
 
 int
-pfkey_write(int fd, struct sadb_msg *smsg, struct iovec *iov, int iov_cnt,
+pfkey_write(struct iked *env, struct sadb_msg *smsg, struct iovec *iov, int iov_cnt,
     uint8_t **datap, ssize_t *lenp)
 {
 	ssize_t n, len = smsg->sadb_msg_len * 8;
+	int ret = -1;
 
 	if (sadb_decoupled) {
 		switch (smsg->sadb_msg_type) {
@@ -1689,16 +1690,22 @@ pfkey_write(int fd, struct sadb_msg *smsg, struct iovec *iov, int iov_cnt,
 		}
 	}
 
-	if ((n = writev(fd, iov, iov_cnt)) == -1) {
+	/* Delete event to poll() in pfkey_reply() */
+	event_del(&env->sc_pfkeyev);
+
+	if ((n = writev(env->sc_pfkey, iov, iov_cnt)) == -1) {
 		log_warn("%s: writev failed: type %u len %zd",
 		    __func__, smsg->sadb_msg_type, len);
-		return (-1);
+		goto done;
 	} else if (n != len) {
 		log_warn("%s: short write", __func__);
-		return (-1);
+		goto done;
 	}
 
-	return (pfkey_reply(fd, datap, lenp));
+	ret = pfkey_reply(env->sc_pfkey, datap, lenp);
+ done:
+	event_add(&env->sc_pfkeyev, NULL);
+	return (ret);
 }
 
 /* wait for pfkey response and returns 0 for ok, -1 for error, -2 for timeout */
@@ -1950,7 +1957,7 @@ pfkey_sa_delete(struct iked *env, struct iked_childsa *sa)
 }
 
 int
-pfkey_flush(int fd)
+pfkey_flush(struct iked *env)
 {
 	struct sadb_msg smsg;
 	struct iovec	iov[IOV_CNT];
@@ -1970,7 +1977,7 @@ pfkey_flush(int fd)
 	iov[iov_cnt].iov_len = sizeof(smsg);
 	iov_cnt++;
 
-	return (pfkey_write(fd, &smsg, iov, iov_cnt, NULL, NULL));
+	return (pfkey_write(env, &smsg, iov, iov_cnt, NULL, NULL));
 }
 
 struct sadb_ident *
@@ -2033,8 +2040,6 @@ pfkey_socket(struct iked *env)
 	if ((fd = socket(PF_KEY, SOCK_RAW, PF_KEY_V2)) == -1)
 		fatal("pfkey_socket: failed to open PF_KEY socket");
 
-	pfkey_flush(fd);
-
 	return (fd);
 }
 
@@ -2057,6 +2062,8 @@ pfkey_init(struct iked *env, int fd)
 	    EV_READ|EV_PERSIST, pfkey_dispatch, env);
 	event_add(&env->sc_pfkeyev, NULL);
 
+	pfkey_flush(env);
+
 	/* Register it to get ESP and AH acquires from the kernel */
 	bzero(&smsg, sizeof(smsg));
 	smsg.sadb_msg_version = PF_KEY_V2;
@@ -2069,7 +2076,7 @@ pfkey_init(struct iked *env, int fd)
 	iov.iov_base = &smsg;
 	iov.iov_len = sizeof(smsg);
 
-	if (pfkey_write(fd, &smsg, &iov, 1, NULL, NULL))
+	if (pfkey_write(env, &smsg, &iov, 1, NULL, NULL))
 		fatal("pfkey_init: failed to set up ESP acquires");
 
 	bzero(&smsg, sizeof(smsg));
@@ -2083,7 +2090,7 @@ pfkey_init(struct iked *env, int fd)
 	iov.iov_base = &smsg;
 	iov.iov_len = sizeof(smsg);
 
-	if (pfkey_write(env->sc_pfkey, &smsg, &iov, 1, NULL, NULL))
+	if (pfkey_write(env, &smsg, &iov, 1, NULL, NULL))
 		fatal("pfkey_init: failed to set up AH acquires");
 }
 
@@ -2271,7 +2278,7 @@ pfkey_process(struct iked *env, struct pfkey_message *pm)
 		smsg.sadb_msg_len += sizeof(sa_pol) / 8;
 		iov_cnt++;
 
-		if (pfkey_write(fd, &smsg, iov, iov_cnt, &reply, &rlen)) {
+		if (pfkey_write(env, &smsg, iov, iov_cnt, &reply, &rlen)) {
 			log_warnx("%s: failed to get a policy", __func__);
 			return (0);
 		}
@@ -2432,7 +2439,7 @@ out:
 		iov[iov_cnt].iov_len = sizeof(*sa_pol);
 		iov_cnt++;
 
-		if (pfkey_write(fd, &smsg, iov, iov_cnt, &reply, &rlen)) {
+		if (pfkey_write(env, &smsg, iov, iov_cnt, &reply, &rlen)) {
 			log_warnx("%s: failed to get a policy", __func__);
 			break;
 		}
