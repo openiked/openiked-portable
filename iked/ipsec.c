@@ -26,55 +26,55 @@
 int
 ipsec_couple(struct iked *env, struct iked_sas *sas, int couple)
 {
-	return pfkey_couple(env->sc_pfkey, sas, couple);
+	return pfkey_couple(env, sas, couple);
 }
 
 int
 ipsec_sa_last_used(struct iked *env, struct iked_childsa *sa, uint64_t *last_used)
 {
-	return pfkey_sa_last_used(env->sc_pfkey, sa, last_used);
+	return pfkey_sa_last_used(env, sa, last_used);
 }
 
 int
 ipsec_flow_add(struct iked *env, struct iked_flow *flow)
 {
-	return pfkey_flow_add(env->sc_pfkey, flow);
+	return pfkey_flow_add(env, flow);
 }
 
 int
 ipsec_flow_delete(struct iked *env, struct iked_flow *flow)
 {
-	return pfkey_flow_delete(env->sc_pfkey, flow);
+	return pfkey_flow_delete(env, flow);
 }
 
 int
 ipsec_sa_init(struct iked *env, struct iked_childsa *sa, uint32_t *spi)
 {
-	return pfkey_sa_init(env->sc_pfkey, sa, spi);
+	return pfkey_sa_init(env, sa, spi);
 }
 
 int
 ipsec_sa_add(struct iked *env, struct iked_childsa *sa, struct iked_childsa *last)
 {
-	return pfkey_sa_add(env->sc_pfkey, sa, last);
+	return pfkey_sa_add(env, sa, last);
 }
 
 int
 ipsec_sa_update_addresses(struct iked *env, struct iked_childsa *sa)
 {
-	return pfkey_sa_update_addresses(env->sc_pfkey, sa);
+	return pfkey_sa_update_addresses(env, sa);
 }
 
 int
 ipsec_sa_delete(struct iked *env, struct iked_childsa *sa)
 {
-	return pfkey_sa_delete(env->sc_pfkey, sa);
+	return pfkey_sa_delete(env, sa);
 }
 
 int
 ipsec_socket(struct iked *env)
 {
-	return pfkey_socket();
+	return pfkey_socket(env);
 }
 
 void

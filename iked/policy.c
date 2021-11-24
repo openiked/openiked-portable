@@ -1,4 +1,4 @@
-/*	$OpenBSD: policy.c,v 1.85 2021/10/26 17:31:22 tobhe Exp $	*/
+/*	$OpenBSD: policy.c,v 1.86 2021/11/24 20:48:00 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
