@@ -487,7 +487,7 @@ pfkey_flow(struct iked *env, uint8_t satype, uint8_t action, struct iked_flow *f
 	struct sadb_msg		 smsg;
 	struct sadb_address	 sa_src, sa_dst;
 	struct sadb_x_ipsecrequest sa_ipsec;
-	struct sadb_x_policy	 sa_policy, *sa_polid;
+	struct sadb_x_policy	 sa_policy;
 	struct sadb_x_sa2	 sa_2;
 	struct sockaddr_storage  ssrc, sdst, slocal, speer;
 	struct iovec		 iov[IOV_CNT];
@@ -495,8 +495,6 @@ pfkey_flow(struct iked *env, uint8_t satype, uint8_t action, struct iked_flow *f
 	in_port_t		 sport, dport;
 	uint8_t			 smask, dmask;
 	uint8_t			 zeropad[8];
-	uint8_t			*reply = NULL;
-	ssize_t			 rlen;
 	uint64_t		 pad = 0;
 	size_t			 padlen;
 
@@ -666,20 +664,7 @@ pfkey_flow(struct iked *env, uint8_t satype, uint8_t action, struct iked_flow *f
 
 #undef PAD
 
-	ret = -1;
-	if (pfkey_write(env, &smsg, iov, iov_cnt, &reply, &rlen) != 0)
-		goto done;
-
-	if ((sa_polid = pfkey_find_ext(reply, rlen,
-	    SADB_X_EXT_POLICY)) == NULL) {
-		log_debug("%s: erroneous reply", __func__);
-		goto done;
-	}
-
-	ret = 0;
-
- done:
-	free(reply);
+	ret = pfkey_write(env, &smsg, iov, iov_cnt, NULL, NULL);
 
 #endif /* __OpenBSD__ */
 
