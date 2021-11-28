@@ -354,6 +354,12 @@ if(HAVE_VROUTE OR HAVE_VROUTE_NETLINK)
 	add_definitions(-DHAVE_VROUTE)
 endif()
 
+if(ASAN)
+	message("Using ASAN")
+	string(APPEND CMAKE_C_FLAGS " -fno-omit-frame-pointer -fsanitize=address")
+	string(APPEND CMAKE_LINKER_FLAGS " -fno-omit-frame-pointer -fsanitize=address")
+endif()
+
 add_subdirectory(compat)
 add_subdirectory(iked)
 add_subdirectory(ikectl)
