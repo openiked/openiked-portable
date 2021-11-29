@@ -26,9 +26,6 @@
 #endif /* __APPLE__ && !HAVE_ENDIAN_H */
 
 #if defined(_WIN32) && !defined(HAVE_ENDIAN_H)
-#if !defined(_MSC_VER)
-#include <sys/param.h>
-#endif
 #include <winsock2.h>
 #define betoh16(x) ntohs((x))
 #define htobe16(x) htons((x))

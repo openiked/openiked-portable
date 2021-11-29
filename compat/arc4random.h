@@ -1,8 +1,6 @@
 #ifndef LIBCRYPTOCOMPAT_ARC4RANDOM_H
 #define LIBCRYPTOCOMPAT_ARC4RANDOM_H
 
-#include <sys/param.h>
-
 #if defined(_AIX)
 #include "arc4random_aix.h"
 
