@@ -223,7 +223,8 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 		ibuf_release(msg->msg_nonce);
 		ibuf_release(msg->msg_ke);
 		ibuf_release(msg->msg_auth.id_buf);
-		ibuf_release(msg->msg_id.id_buf);
+		ibuf_release(msg->msg_peerid.id_buf);
+		ibuf_release(msg->msg_localid.id_buf);
 		ibuf_release(msg->msg_cert.id_buf);
 		ibuf_release(msg->msg_cookie);
 		ibuf_release(msg->msg_cookie2);
