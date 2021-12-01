@@ -1,4 +1,4 @@
-/*	$OpenBSD: parse.y,v 1.137 2021/11/20 20:44:33 tobhe Exp $	*/
+/*	$OpenBSD: parse.y,v 1.138 2021/12/01 16:42:13 deraadt Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -677,7 +677,7 @@ protoval	: STRING			{
 		}
 		;
 
-rdomain		: /* empty */ 			{ $$ = -1; }
+rdomain		: /* empty */			{ $$ = -1; }
 		| RDOMAIN NUMBER		{
 #ifdef SADB_X_EXT_RDOMAIN
 			if ($2 > 255 || $2 < 0) {
@@ -2519,7 +2519,7 @@ create_ike(char *name, int af, struct ipsec_addr_wrap *ipproto,
 		pol.pol_ipproto[i] = ipp->type;
 		pol.pol_nipproto++;
 	}
-	
+
 	pol.pol_flags = flags;
 	pol.pol_rdomain = rdomain;
 	memcpy(&pol.pol_auth, authtype, sizeof(struct iked_auth));
