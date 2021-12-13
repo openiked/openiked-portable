@@ -1,4 +1,4 @@
-/*	$OpenBSD: ca.c,v 1.84 2021/12/13 17:35:34 tobhe Exp $	*/
+/*	$OpenBSD: ca.c,v 1.85 2021/12/13 19:46:22 tb Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -611,6 +611,7 @@ ca_getreq(struct iked *env, struct imsg *imsg)
 			if (subj_name == NULL)
 				return (-1);
 			log_debug("%s: found CA %s", __func__, subj_name);
+			free(subj_name);
 
 			if ((cert = ca_by_issuer(store->ca_certs,
 			    subj, &id)) != NULL) {
@@ -667,6 +668,7 @@ ca_getreq(struct iked *env, struct imsg *imsg)
 			return (-1);
 		log_debug("%s: found local certificate %s", __func__,
 		    subj_name);
+		free(subj_name);
 
 		if ((buf = ca_x509_serialize(cert)) == NULL)
 			return (-1);
@@ -841,6 +843,7 @@ ca_reload(struct iked *env)
 		if (subj_name == NULL)
 			return (-1);
 		log_debug("%s: %s", __func__, subj_name);
+		free(subj_name);
 
 		if (ibuf_add(env->sc_certreq, md, len) != 0) {
 			ibuf_release(env->sc_certreq);
@@ -1731,6 +1734,7 @@ ca_validate_cert(struct iked *env, struct iked_static_id *id,
 		if (subj_name == NULL)
 			goto err;
 		log_debug("%s: %s %.100s", __func__, subj_name, errstr);
+		free(subj_name);
 	}
  err:
 
