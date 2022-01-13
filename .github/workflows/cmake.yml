@@ -61,11 +61,6 @@ jobs:
       shell: bash
       run: ./test_parser
 
-    - name: Test Libfuzz-Parser
-      working-directory: ${{github.workspace}}/build/regress/parser-libfuzzer
-      shell: bash
-      run: bash run_test.sh
-
   macos:
     strategy:
       matrix:
