@@ -27,9 +27,8 @@ jobs:
         fuzz-seconds: 10800 # run 3h
         mode: 'batch'
         sanitizer: ${{ matrix.sanitizer }}
-        # Optional but recommended: For storing certain artifacts from fuzzing.
-        # See later section on "Git repo for storage".
-        # storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/OWNER/STORAGE-REPO-NAME.git
-        # storage-repo-branch: main   # Optional. Defaults to "main"
-        # storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
+        # For storing certain artifacts from fuzzing.
+        storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/openiked/openiked-fuzzing.git
+        storage-repo-branch: main
+        storage-repo-branch-coverage: gh-pages
 

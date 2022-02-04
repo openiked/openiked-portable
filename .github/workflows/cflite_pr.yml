@@ -20,12 +20,10 @@ jobs:
       uses: google/clusterfuzzlite/actions/build_fuzzers@v1
       with:
         sanitizer: ${{ matrix.sanitizer }}
-        # Optional but recommended: used to only run fuzzers that are affected
-        # by the PR.
-        # See later section on "Git repo for storage".
-        # storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/OWNER/STORAGE-REPO-NAME.git
-        # storage-repo-branch: main   # Optional. Defaults to "main"
-        # storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
+        # used to only run fuzzers that are affected by the PR.
+        storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/openiked/openiked-fuzzing.git
+        storage-repo-branch: main
+        storage-repo-branch-coverage: gh-pages
     - name: Run Fuzzers (${{ matrix.sanitizer }})
       id: run
       uses: google/clusterfuzzlite/actions/run_fuzzers@v1
@@ -34,10 +32,7 @@ jobs:
         fuzz-seconds: 600
         mode: 'code-change'
         sanitizer: ${{ matrix.sanitizer }}
-        # Optional but recommended: used to download the corpus produced by
-        # batch fuzzing.
-        # See later section on "Git repo for storage".
-        # storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/OWNER/STORAGE-REPO-NAME.git
-        # storage-repo-branch: main   # Optional. Defaults to "main"
-        # storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
-      
+        # used to download the corpus produced by batch fuzzing.
+        storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/openiked/openiked-fuzzing.git
+        storage-repo-branch: main
+        storage-repo-branch-coverage: gh-pages
