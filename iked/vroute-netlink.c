@@ -32,7 +32,7 @@
 
 #include <iked.h>
 
-int vroute_setroute(struct iked *, uint8_t, struct sockaddr *, uint8_t,
+int vroute_setroute(struct iked *, uint32_t, struct sockaddr *, uint8_t,
     struct sockaddr *, int);
 int vroute_doroute(struct iked *, uint8_t, struct sockaddr *,
     struct sockaddr *, struct sockaddr *, int);
@@ -404,7 +404,7 @@ vroute_setdelroute(struct iked *env, uint8_t rdomain, struct sockaddr *dst,
 }
 
 int
-vroute_setroute(struct iked *env, uint8_t rdomain, struct sockaddr *dst,
+vroute_setroute(struct iked *env, uint32_t rdomain, struct sockaddr *dst,
     uint8_t mask, struct sockaddr *addr, int type)
 {
 	struct sockaddr_storage	 sa;
@@ -463,7 +463,7 @@ vroute_getroute(struct iked *env, struct imsg *imsg)
 	uint8_t			*ptr;
 	size_t			 left;
 	int			 type = 0;
-	uint8_t			 rdomain;
+	uint32_t		 rdomain;
 	int			 host = 1;
 
 	ptr = (uint8_t *)imsg->data;
