@@ -47,6 +47,7 @@ $left{'name'} = "left";
 my $tests = {
   "test_single_ca" => \&test_single_ca,
   "test_multi_ca" => \&test_multi_ca,
+  "test_pubkey" => \&test_pubkey,
   "test_fragmentation" => \&test_fragmentation,
 };
 
@@ -142,6 +143,22 @@ sub test_multi_ca {
 		'from' => $right{'addr'},
 		'to' => $left{'addr'},
 		'srcid' => "$right{'name'}-from-ca-left",
+		'mode' => "active",
+	);
+	test_basic(\%lconf, \%rconf);
+}
+
+sub test_pubkey {
+	my %lconf = (
+		'from' => $left{'addr'},
+		'to' => $right{'addr'},
+		'srcid' => "$left{'name'}-pub",
+		'mode' => "active",
+	);
+	my %rconf = (
+		'from' => $right{'addr'},
+		'to' => $left{'addr'},
+		'srcid' => "$right{'name'}-pub",
 		'mode' => "active",
 	);
 	test_basic(\%lconf, \%rconf);
@@ -290,6 +307,7 @@ sub deploy_certs {
 	put $BUILDDIR/left-from-ca-right.crt certs\n
 	put $BUILDDIR/left.key private/local.key\n
 	put $BUILDDIR/left.pub local.pub\n
+	put $BUILDDIR/right.pub pubkeys/fqdn/right-pub\n
 	put $BUILDDIR/ca-left.crt ca\n
 	put $BUILDDIR/ca-both.crt ca\n" | sftp -q $left{'ssh'} -q > /dev/null;
 	DOC
@@ -300,6 +318,7 @@ sub deploy_certs {
 	put $BUILDDIR/right-from-ca-left.crt certs\n
 	put $BUILDDIR/right.key private/local.key\n
 	put $BUILDDIR/right.pub local.pub\n
+	put $BUILDDIR/left.pub pubkeys/fqdn/left-pub\n
 	put $BUILDDIR/ca-right.crt ca\n
 	put $BUILDDIR/ca-both.crt ca\n" | sftp -q $right{'ssh'} -q > /dev/null;
 	DOC
