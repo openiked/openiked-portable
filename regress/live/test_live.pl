@@ -96,6 +96,7 @@ if (defined $options{t}) {
 
 # run all tests
 for (keys %$tests) {
+	print("$_: ");
 	$tests->{$_}->();
 }
 
@@ -125,7 +126,7 @@ sub test_ping {
 	system("chmod 0600 $BUILDDIR/$sub_name-left.conf");
 	system <<~DOC;
 	echo "cd /tmp
-	put $BUILDDIR/$sub_name-left.conf test.conf" | sftp -q $left{'ssh'} -q;
+	put $BUILDDIR/$sub_name-left.conf test.conf" | sftp -q $left{'ssh'} -q > /dev/null;
 	DOC
 
 	my %rconf = (
@@ -138,13 +139,14 @@ sub test_ping {
 	system("chmod 0600 $BUILDDIR/$sub_name-right.conf");
 	system <<~DOC;
 	echo "cd /tmp
-	put $BUILDDIR/$sub_name-right.conf test.conf" | sftp -q $right{'ssh'} -q;
+	put $BUILDDIR/$sub_name-right.conf test.conf" | sftp -q $right{'ssh'} -q > /dev/null;
 	DOC
 
 	setup_start(\%left);
 	setup_start(\%right);
 
-	print "FAIL" if check_ping(\%left, \%right);
+	sleep(5);
+	check_established(\%left, \%right);
 }
 
 sub test_fragmentation {
@@ -160,7 +162,7 @@ sub test_fragmentation {
 	system("chmod 0600 $BUILDDIR/$sub_name-left.conf");
 	system <<~DOC;
 	echo "cd /tmp
-	put $BUILDDIR/$sub_name-left.conf test.conf" | sftp -q $left{'ssh'} -q;
+	put $BUILDDIR/$sub_name-left.conf test.conf" | sftp -q $left{'ssh'} -q > /dev/null;
 	DOC
 
 	my %rconf = (
@@ -174,32 +176,32 @@ sub test_fragmentation {
 	system("chmod 0600 $BUILDDIR/$sub_name-right.conf");
 	system <<~DOC;
 	echo "cd /tmp
-	put $BUILDDIR/$sub_name-right.conf test.conf" | sftp -q $right{'ssh'} -q;
+	put $BUILDDIR/$sub_name-right.conf test.conf" | sftp -q $right{'ssh'} -q > /dev/null;
 	DOC
 
 	setup_start(\%left);
 	setup_start(\%right);
-	print "FAIL" if check_ping(\%left, \%right);
+
+	sleep(5);
+	check_established(\%left, \%right);
 }
 
 sub cleanup {
 	print("Cleaning up.\n");
 	setup_stop(\%left);
 	setup_stop(\%right);
-	system("ssh -q $left{'ssh'} \"rm /tmp/test.conf\" 2>/dev/null");
-	system("ssh -q $right{'ssh'} \"rm /tmp/test.conf\" 2>/dev/null");
+	system("ssh -q $left{'ssh'} \"rm /tmp/test.conf; rm /tmp/test.log\" 2>/dev/null");
+	system("ssh -q $right{'ssh'} \"rm /tmp/test.conf; rm /tmp/test.log\" 2>/dev/null");
 }
 
 sub setup_start {
 	my ($peer) = @_;
-	system("ssh -q $peer->{'ssh'} \"$peer->{'cmd_flush'}; pkill iked; ".
-	    "iked -df /tmp/test.conf\&\"\&");
+	system("ssh -q $peer->{'ssh'} \"$peer->{'cmd_flush'}; pkill iked; iked -df /tmp/test.conf 2> /tmp/test.log\&\"&")
 }
 
 sub setup_stop {
 	my ($peer) = @_;
-	system("ssh -q $peer->{'ssh'} \"$peer->{'cmd_flush'}; pkill iked;\" ".
-	    "2>/dev/null");
+	system("ssh -q $peer->{'ssh'} \"$peer->{'cmd_flush'}; pkill iked\"");
 }
 
 sub setup_ca {
@@ -298,16 +300,30 @@ sub init_osdep {
 
 	$peer->{'os'} = `ssh -q $peer->{'ssh'} uname`;
 	$peer->{'etc_dir'} = "/etc/iked";
-	if ($peer->{'os'} cmp "OpenBSD") {
+	if (($peer->{'os'} cmp "OpenBSD\n") == 0) {
 		$peer->{'cmd_flush'} = "ipsecctl -F";
-	} elsif ($peer->{'os'} cmp "Linux") {
+	} elsif (($peer->{'os'} cmp "Linux\n") == 0) {
 		$peer->{'cmd_flush'} = "ip x p f; ip x s f";
-	} elsif ($peer->{'os'} cmp "FreeBSD") {
+	} elsif (($peer->{'os'} cmp "FreeBSD\n") == 0) {
 		$peer->{'cmd_flush'} = "setkey -PD; setkey -D";
 		$peer->{'etc_dir'} = "/usr/local/etc/iked";
 	} else {
 		print "error: unsupported OS " . $peer->{'os'} ."\n";
 		exit 1;
+	}
+}
+
+sub check_established {
+	my ($left, $right) = @_;
+
+	my $llog = `ssh -q $left->{'ssh'} \"cat /tmp/test.log\"`;
+	my $les = $llog =~ /spi=0x[0-9a-f]{16}: established peer/;
+	my $rlog = `ssh -q $right->{'ssh'} \"cat /tmp/test.log\"`;
+	my $res = $rlog =~ /spi=0x[0-9a-f]{16}: established peer $left->{'addr'}/;
+	if ($les && $res) {
+		print("SUCCESS\n");
+	} else {
+		print("FAIL\n");
 	}
 }
 
