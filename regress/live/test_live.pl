@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright (c) 2020 - 2021 Tobias Heider <tobhe@openbsd.org>
+# Copyright (c) 2020 - 2022 Tobias Heider <tobhe@openbsd.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -45,21 +45,22 @@ $right{'name'} = "right";
 $left{'name'} = "left";
 
 my $tests = {
-  "test_ping" => \&test_ping,
+  "test_single_ca" => \&test_single_ca,
+  "test_multi_ca" => \&test_multi_ca,
   "test_fragmentation" => \&test_fragmentation,
 };
 
 if (defined $options{l}) {
-	print "tests:\n";
+	print("tests:\n");
 	for (keys %$tests) {
-		print "\t" . $_ . "\n";
+		print("\t$_\n");
 	}
 	exit 0;
 }
 
-my $BUILDDIR = ($ENV{'BUILDDIR'} eq "") ? "obj" : $ENV{'BUILDDIR'};
+my $BUILDDIR = (defined $ENV{'BUILDDIR'}) ? $ENV{'BUILDDIR'} : "obj";
 if (-e $BUILDDIR and !-d $BUILDDIR) {
-	print "error: BUILDDIR is not a directory\n";
+	print("error: BUILDDIR is not a directory\n");
 	exit 1;
 }
 if (!-e $BUILDDIR) {
@@ -78,8 +79,8 @@ if (defined $options{s}) {
 	setup_key("right");
 	setup_cert("left", "ca-both");
 	setup_cert("right", "ca-both");
-	setup_cert("left", "ca-left");
-	setup_cert("right", "ca-right");
+	setup_cert("right", "ca-left");
+	setup_cert("left", "ca-right");
 	deploy_certs();
 	exit 0;
 }
@@ -90,7 +91,7 @@ if (defined $options{t}) {
 		cleanup();
 		exit 0;
 	}
-	print "error: no such test " . $options{t} . "\n";
+	print("error: no such test $options{t}\n");
 	exit 1;
 }
 
@@ -114,43 +115,39 @@ sub usage {
 	exit 1;
 }
 
-sub test_ping {
-	my $sub_name = (caller(0))[3];
+sub test_single_ca {
 	my %lconf = (
 		'from' => $left{'addr'},
 		'to' => $right{'addr'},
 		'srcid' => "$left{'name'}-from-ca-both",
 		'mode' => "active",
 	);
-	setup_config("$sub_name-left", \%lconf);
-	system("chmod 0600 $BUILDDIR/$sub_name-left.conf");
-	system <<~DOC;
-	echo "cd /tmp
-	put $BUILDDIR/$sub_name-left.conf test.conf" | sftp -q $left{'ssh'} -q > /dev/null;
-	DOC
-
 	my %rconf = (
 		'from' => $right{'addr'},
 		'to' => $left{'addr'},
 		'srcid' => "$right{'name'}-from-ca-both",
 		'mode' => "active",
 	);
-	setup_config("$sub_name-right", \%rconf);
-	system("chmod 0600 $BUILDDIR/$sub_name-right.conf");
-	system <<~DOC;
-	echo "cd /tmp
-	put $BUILDDIR/$sub_name-right.conf test.conf" | sftp -q $right{'ssh'} -q > /dev/null;
-	DOC
+	test_basic(\%lconf, \%rconf);
+}
 
-	setup_start(\%left);
-	setup_start(\%right);
-
-	sleep(5);
-	check_established(\%left, \%right);
+sub test_multi_ca {
+	my %lconf = (
+		'from' => $left{'addr'},
+		'to' => $right{'addr'},
+		'srcid' => "$left{'name'}-from-ca-right",
+		'mode' => "active",
+	);
+	my %rconf = (
+		'from' => $right{'addr'},
+		'to' => $left{'addr'},
+		'srcid' => "$right{'name'}-from-ca-left",
+		'mode' => "active",
+	);
+	test_basic(\%lconf, \%rconf);
 }
 
 sub test_fragmentation {
-	my $sub_name = (caller(0))[3];
 	my %lconf = (
 		'from' => $left{'addr'},
 		'to' => $right{'addr'},
@@ -158,13 +155,6 @@ sub test_fragmentation {
 		'srcid' => "$left{'name'}-from-ca-both",
 		'mode' => "active",
 	);
-	setup_config("$sub_name-left", \%lconf);
-	system("chmod 0600 $BUILDDIR/$sub_name-left.conf");
-	system <<~DOC;
-	echo "cd /tmp
-	put $BUILDDIR/$sub_name-left.conf test.conf" | sftp -q $left{'ssh'} -q > /dev/null;
-	DOC
-
 	my %rconf = (
 		'from' => $right{'addr'},
 		'to' => $left{'addr'},
@@ -172,7 +162,21 @@ sub test_fragmentation {
 		'srcid' => "$right{'name'}-from-ca-both",
 		'mode' => "active",
 	);
-	setup_config("$sub_name-right", \%rconf);
+	test_basic(\%lconf, \%rconf);
+}
+
+
+sub test_basic {
+	my ($lconf, $rconf) = @_;
+	my $sub_name = (caller(0))[3];
+	setup_config("$sub_name-left", $lconf);
+	system("chmod 0600 $BUILDDIR/$sub_name-left.conf");
+	system <<~DOC;
+	echo "cd /tmp
+	put $BUILDDIR/$sub_name-left.conf test.conf" | sftp -q $left{'ssh'} -q > /dev/null;
+	DOC
+
+	setup_config("$sub_name-right", $rconf);
 	system("chmod 0600 $BUILDDIR/$sub_name-right.conf");
 	system <<~DOC;
 	echo "cd /tmp
@@ -182,8 +186,14 @@ sub test_fragmentation {
 	setup_start(\%left);
 	setup_start(\%right);
 
-	sleep(5);
-	check_established(\%left, \%right);
+	for (1..5) {
+		sleep(1);
+		if (check_established(\%left, \%right)) {
+			print("SUCCESS\n");
+			return;
+		}
+	}
+	print("FAIL\n");
 }
 
 sub cleanup {
@@ -281,17 +291,17 @@ sub deploy_certs {
 	put $BUILDDIR/left.key private/local.key\n
 	put $BUILDDIR/left.pub local.pub\n
 	put $BUILDDIR/ca-left.crt ca\n
-	put $BUILDDIR/ca-both.crt ca\n" | sftp -q $left{'ssh'} -q;
+	put $BUILDDIR/ca-both.crt ca\n" | sftp -q $left{'ssh'} -q > /dev/null;
 	DOC
 
 	system <<~"DOC";
 	echo "cd $right{'etc_dir'}\n
 	put $BUILDDIR/right-from-ca-both.crt certs\n
-	put $BUILDDIR/right-from-ca-right.crt certs\n
+	put $BUILDDIR/right-from-ca-left.crt certs\n
 	put $BUILDDIR/right.key private/local.key\n
 	put $BUILDDIR/right.pub local.pub\n
 	put $BUILDDIR/ca-right.crt ca\n
-	put $BUILDDIR/ca-both.crt ca\n" | sftp -q $right{'ssh'} -q;
+	put $BUILDDIR/ca-both.crt ca\n" | sftp -q $right{'ssh'} -q > /dev/null;
 	DOC
 }
 
@@ -321,10 +331,9 @@ sub check_established {
 	my $rlog = `ssh -q $right->{'ssh'} \"cat /tmp/test.log\"`;
 	my $res = $rlog =~ /spi=0x[0-9a-f]{16}: established peer $left->{'addr'}/;
 	if ($les && $res) {
-		print("SUCCESS\n");
-	} else {
-		print("FAIL\n");
+		return 1;
 	}
+	return 0;
 }
 
 sub check_ping {
