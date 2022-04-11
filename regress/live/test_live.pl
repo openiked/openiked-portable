@@ -217,8 +217,8 @@ sub test_basic {
 sub cleanup {
 	setup_stop(\%left);
 	setup_stop(\%right);
-	system("ssh -q $left{'ssh'} \"rm /tmp/test.conf; cat /tmp/test.log >> /tmp/full.log; rm /tmp/test.log\" 2>/dev/null");
-	system("ssh -q $right{'ssh'} \"rm /tmp/test.conf; cat /tmp/test.log >> /tmp/full.log; rm /tmp/test.log\" 2>/dev/null");
+	system("ssh -q $left{'ssh'} \"rm /tmp/test.conf; cat /tmp/test.log >> /tmp/iked-live.log; rm /tmp/test.log\" 2>/dev/null");
+	system("ssh -q $right{'ssh'} \"rm /tmp/test.conf; cat /tmp/test.log >> /tmp/iked-live.log; rm /tmp/test.log\" 2>/dev/null");
 }
 
 sub setup_start {
@@ -284,6 +284,7 @@ sub setup_config {
 	print $dest "FROM=\"$conf->{'from'}\"\n";
 	print $dest "TO=\"$conf->{'to'}\"\n";
 	print $dest "PEER_ADDR=\"$conf->{'to'}\"\n";
+	print $dest "IKESA=\"$conf->{'ikesa'}\"\n";
 	print $dest "MODE=\"$conf->{'mode'}\"\n";
 	print $dest "TMODE=\"$conf->{'tmode'}\"\n";
 	print $dest "AUTH=\"$conf->{'auth'}\"\n";
