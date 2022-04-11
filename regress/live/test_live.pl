@@ -46,7 +46,9 @@ $left{'name'} = "left";
 
 my $tests = {
   "test_single_ca" => \&test_single_ca,
+  "test_single_ca_asn1dn" => \&test_single_ca_asn1dn,
   "test_multi_ca" => \&test_multi_ca,
+  "test_no_ca" => \&test_no_ca,
   "test_pubkey" => \&test_pubkey,
   "test_fragmentation" => \&test_fragmentation,
 };
@@ -73,21 +75,29 @@ init_osdep(\%right);
 
 if (defined $options{s}) {
 	# Generate CAs and certs
+	setup_ca("ca-none");
 	setup_ca("ca-right");
 	setup_ca("ca-left");
 	setup_ca("ca-both");
+
 	setup_key("left");
 	setup_key("right");
+
 	setup_cert("left", "ca-both");
 	setup_cert("right", "ca-both");
+
 	setup_cert("right", "ca-left");
 	setup_cert("left", "ca-right");
+
+	setup_cert("right", "ca-none");
+	setup_cert("left", "ca-none");
 	deploy_certs();
 	exit 0;
 }
 
 if (defined $options{t}) {
 	if (defined $tests->{$options{t}}) {
+		print("$options{t}: ");
 		$tests->{$options{t}}->();
 		cleanup();
 		exit 0;
@@ -133,6 +143,22 @@ sub test_single_ca {
 	test_basic(\%lconf, \%rconf);
 }
 
+sub test_single_ca_asn1dn {
+	my %lconf = (
+		'from' => $left{'addr'},
+		'to' => $right{'addr'},
+		'srcid' => "\\\"/C=DE/ST=Bavaria/L=Munich/O=iked/CN=$left{'name'}-from-ca-both\\\"",
+		'mode' => "active",
+	);
+	my %rconf = (
+		'from' => $right{'addr'},
+		'to' => $left{'addr'},
+		'srcid' => "\\\"/C=DE/ST=Bavaria/L=Munich/O=iked/CN=$right{'name'}-from-ca-both\\\"",
+		'mode' => "active",
+	);
+	test_basic(\%lconf, \%rconf);
+}
+
 sub test_multi_ca {
 	my %lconf = (
 		'from' => $left{'addr'},
@@ -144,6 +170,22 @@ sub test_multi_ca {
 		'from' => $right{'addr'},
 		'to' => $left{'addr'},
 		'srcid' => "$right{'name'}-from-ca-left",
+		'mode' => "active",
+	);
+	test_basic(\%lconf, \%rconf);
+}
+
+sub test_no_ca {
+	my %lconf = (
+		'from' => $left{'addr'},
+		'to' => $right{'addr'},
+		'srcid' => "$left{'name'}-from-ca-none",
+		'mode' => "active",
+	);
+	my %rconf = (
+		'from' => $right{'addr'},
+		'to' => $left{'addr'},
+		'srcid' => "$right{'name'}-from-ca-none",
 		'mode' => "active",
 	);
 	test_basic(\%lconf, \%rconf);
@@ -306,6 +348,8 @@ sub deploy_certs {
 	echo "cd $left{'etc_dir'}\n
 	put $BUILDDIR/left-from-ca-both.crt certs\n
 	put $BUILDDIR/left-from-ca-right.crt certs\n
+	put $BUILDDIR/left-from-ca-none.crt certs\n
+	put $BUILDDIR/right-from-ca-none.crt certs\n
 	put $BUILDDIR/left.key private/local.key\n
 	put $BUILDDIR/left.pub local.pub\n
 	put $BUILDDIR/right.pub pubkeys/fqdn/right-pub\n
@@ -317,6 +361,8 @@ sub deploy_certs {
 	echo "cd $right{'etc_dir'}\n
 	put $BUILDDIR/right-from-ca-both.crt certs\n
 	put $BUILDDIR/right-from-ca-left.crt certs\n
+	put $BUILDDIR/right-from-ca-none.crt certs\n
+	put $BUILDDIR/left-from-ca-none.crt certs\n
 	put $BUILDDIR/right.key private/local.key\n
 	put $BUILDDIR/right.pub local.pub\n
 	put $BUILDDIR/left.pub pubkeys/fqdn/left-pub\n
