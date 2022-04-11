@@ -100,6 +100,7 @@ if (defined $options{t}) {
 for (keys %$tests) {
 	print("$_: ");
 	$tests->{$_}->();
+	cleanup();
 }
 
 cleanup();
@@ -214,11 +215,10 @@ sub test_basic {
 }
 
 sub cleanup {
-	print("Cleaning up.\n");
 	setup_stop(\%left);
 	setup_stop(\%right);
-	system("ssh -q $left{'ssh'} \"rm /tmp/test.conf; rm /tmp/test.log\" 2>/dev/null");
-	system("ssh -q $right{'ssh'} \"rm /tmp/test.conf; rm /tmp/test.log\" 2>/dev/null");
+	system("ssh -q $left{'ssh'} \"rm /tmp/test.conf; cat /tmp/test.log >> /tmp/full.log; rm /tmp/test.log\" 2>/dev/null");
+	system("ssh -q $right{'ssh'} \"rm /tmp/test.conf; cat /tmp/test.log >> /tmp/full.log; rm /tmp/test.log\" 2>/dev/null");
 }
 
 sub setup_start {
