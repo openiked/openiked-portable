@@ -962,6 +962,7 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 	if (satype == SADB_X_SATYPE_IPCOMP)
 		sadb.sadb_sa_encrypt = SADB_X_CALG_DEFLATE;
 
+#if defined __OpenBSD__
 	/* Note that we need to swap the IDs for incoming SAs (SADB_UPDATE) */
 	if (action != SADB_UPDATE) {
 		sa_srcid = pfkey_id2ident(
@@ -974,6 +975,7 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 		sa_dstid = pfkey_id2ident(
 		    IKESA_SRCID(sa->csa_ikesa), SADB_EXT_IDENTITY_DST);
 	}
+#endif
 
 #ifdef SADB_X_EXT_TAG
 	tag = sa->csa_ikesa->sa_tag;
@@ -1131,6 +1133,7 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 		PAD(ibuf_size(sa->csa_integrkey));
 	}
 
+#if defined __OpenBSD__
 	if (sa_srcid) {
 		/* src identity */
 		iov[iov_cnt].iov_base = sa_srcid;
@@ -1145,6 +1148,7 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 		smsg.sadb_msg_len += sa_dstid->sadb_ident_len;
 		iov_cnt++;
 	}
+#endif
 
 #ifdef SADB_X_EXT_TAG
 	if (tag != NULL) {
