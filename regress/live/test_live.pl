@@ -683,7 +683,7 @@ sub init_osdep {
 	} elsif (($peer->{'os'} cmp "Linux\n") == 0) {
 		$peer->{'cmd_flush'} = "ip x p f; ip x s f";
 	} elsif (($peer->{'os'} cmp "FreeBSD\n") == 0) {
-		$peer->{'cmd_flush'} = "setkey -PD; setkey -D";
+		$peer->{'cmd_flush'} = "setkey -PF; setkey -F";
 		$peer->{'etc_dir'} = "/usr/local/etc/iked";
 	} else {
 		print("error: unsupported OS $peer->{'os'}\n");
