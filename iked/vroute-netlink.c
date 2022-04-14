@@ -528,7 +528,7 @@ vroute_getcloneroute(struct iked *env, struct imsg *imsg)
 	struct sockaddr_storage	 mask;
 	uint8_t			*ptr;
 	size_t			 left;
-	uint8_t			 rdomain;
+	uint32_t		 rdomain;
 
 	ptr = (uint8_t *)imsg->data;
 	left = IMSG_DATA_SIZE(imsg);
