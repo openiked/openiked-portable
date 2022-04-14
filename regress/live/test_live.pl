@@ -61,6 +61,7 @@ my $tests = {
   "test_singleikesa" => \&test_singleikesa,
   "test_config_addr" => \&test_config_addr,
   "test_config_addrpool" => \&test_config_addrpool,
+  "test_lifetime" => \&test_lifetime,
 };
 
 if (defined $options{l}) {
@@ -524,6 +525,27 @@ sub test_singleikesa {
 		'mode' => "active",
 		'expect' => ["spi=0x[0-9a-f]{16}: established peer $left{'addr'}"],
 	);
+	test_basic(\%lconf, \%rconf);
+}
+
+sub test_lifetime {
+	my %lconf = (
+		'from' => $left{'addr'},
+		'to' => $right{'addr'},
+		'srcid' => "$left{'name'}-from-ca-both",
+		'mode' => "active",
+		'config' => "ikelifetime 30 lifetime 20 bytes 500K",
+		'expect' => ["spi=0x[0-9a-f]{16}: established peer $right{'addr'}"],
+	);
+	my %rconf = (
+		'from' => $right{'addr'},
+		'to' => $left{'addr'},
+		'srcid' => "$right{'name'}-from-ca-both",
+		'mode' => "active",
+		'config' => "ikelifetime 30 lifetime 20 bytes 500K",
+		'expect' => ["spi=0x[0-9a-f]{16}: established peer $left{'addr'}"],
+	);
+	# XXX: wait and check rekey log message
 	test_basic(\%lconf, \%rconf);
 }
 
