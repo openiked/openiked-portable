@@ -44,30 +44,30 @@ $right{'addr'} = $RIGHT_ADDR;
 $right{'name'} = "right";
 $left{'name'} = "left";
 
-my $tests = {
-  "test_single_ca" => \&test_single_ca,
-  "test_single_ca_asn1dn" => \&test_single_ca_asn1dn,
-  "test_altname" => \&test_altname,
-  "test_multi_ca" => \&test_multi_ca,
-  "test_no_ca" => \&test_no_ca,
-  "test_pubkey" => \&test_pubkey,
-  "test_psk" => \&test_psk,
-  "test_invalid_ke" => \&test_invalid_ke,
-  "test_ikesa_all" => \&test_ikesa_all,
-  "test_childsa_all" => \&test_childsa_all,
-  "test_group_sntrup761x25519" => \&test_group_sntrup761x25519,
-  "test_transport" => \&test_transport,
-  "test_fragmentation" => \&test_fragmentation,
-  "test_singleikesa" => \&test_singleikesa,
-  "test_config_addr" => \&test_config_addr,
-  "test_config_addrpool" => \&test_config_addrpool,
-  "test_lifetime" => \&test_lifetime,
-};
+my @tests = (
+  "test_single_ca",
+  "test_single_ca_asn1dn",
+  "test_altname",
+  "test_multi_ca",
+  "test_no_ca",
+  "test_pubkey",
+  "test_psk",
+  "test_invalid_ke",
+  "test_ikesa_all",
+  "test_childsa_all",
+  "test_group_sntrup761x25519",
+  "test_transport",
+  "test_fragmentation",
+  "test_singleikesa",
+  "test_config_addr",
+  "test_config_addrpool",
+  "test_lifetime",
+);
 
 if (defined $options{l}) {
 	print("tests:\n");
-	for (keys %$tests) {
-		print("\t$_\n");
+	for my $test (@tests) {
+		print("\t$test\n");
 	}
 	exit 0;
 }
@@ -107,9 +107,9 @@ if (defined $options{s}) {
 }
 
 if (defined $options{t}) {
-	if (defined $tests->{$options{t}}) {
+	if ( grep { $options{t} eq $_ } @tests ) {
 		print("$options{t}: ");
-		$tests->{$options{t}}->();
+		eval "$options{t}()";
 		cleanup();
 		exit 0;
 	}
@@ -118,9 +118,9 @@ if (defined $options{t}) {
 }
 
 # run all tests
-for (keys %$tests) {
-	print("$_: ");
-	$tests->{$_}->();
+for my $test (@tests) {
+	print("$test: ");
+	eval "$test()";
 	cleanup();
 }
 
