@@ -117,9 +117,16 @@ else()
 		PRIVATE util event crypto ssl compat
 	)
 endif()
-target_link_libraries(iked
-	PRIVATE util event crypto ssl compat iked-shared
-)
+
+if(WITH_APPARMOR)
+	target_link_libraries(iked
+		PRIVATE util event crypto ssl compat iked-shared apparmor
+	)
+else()
+	target_link_libraries(iked
+		PRIVATE util event crypto ssl compat iked-shared
+	)
+endif()
 
 add_custom_command(
 	OUTPUT parse.c
@@ -150,6 +157,11 @@ install(FILES ${CMAKE_SOURCE_DIR}/iked.conf
 )
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/iked.conf.5 DESTINATION ${CMAKE_INSTALL_MANDIR}/man5/)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/iked.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8/)
+if(WITH_APPARMOR)
+	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/iked.apparmor
+		DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/apparmor.d/
+		RENAME usr.sbin.iked)
+endif()
 install(DIRECTORY DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/iked/ca)
 install(DIRECTORY DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/iked/certs)
 install(DIRECTORY DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/iked/crls)

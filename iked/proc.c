@@ -22,6 +22,10 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 
+#ifdef WITH_APPARMOR
+#include <sys/apparmor.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -387,6 +391,28 @@ proc_run(struct privsep *ps, struct privsep_proc *p,
 			if (control_init(ps, rcs) == -1)
 				fatalx(__func__);
 	}
+
+#ifdef WITH_APPARMOR
+	switch(p->p_id) {
+	case PROC_IKEV2:
+		if (aa_change_profile("iked//ikev2") == -1)
+			log_warnx("warning: aa_change_profile"
+			    "(\"iked//ikev2\") failed");
+		break;
+	case PROC_CONTROL:
+		if (aa_change_profile("iked//control") == -1)
+			log_warnx("warning: aa_change_profile"
+			    "(\"iked//control\") failed");
+		break;
+	case PROC_CERT:
+		if (aa_change_profile("iked//ca") == -1)
+			log_warnx("warning: aa_change_profile"
+			    "(\"iked//ca\") failed");
+		break;
+	default:
+		break;
+	}
+#endif
 
 	/* Change root directory */
 	if (p->p_chroot != NULL)
