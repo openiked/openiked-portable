@@ -101,7 +101,9 @@ add_executable(iked ${SRCS})
 
 target_compile_options(iked PRIVATE ${CFLAGS})
 target_compile_options(iked-shared PRIVATE ${CFLAGS})
-target_link_options(iked PRIVATE "LINKER:-z,relro,-z,now")
+if(HAVE_LD_Z)
+	target_link_options(iked PRIVATE "LINKER:-z,relro,-z,now")
+endif()
 
 target_include_directories(iked PRIVATE ${INC_DIRS})
 target_include_directories(iked-shared PRIVATE ${INC_DIRS})

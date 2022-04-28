@@ -20,6 +20,7 @@ include(CheckFunctionExists)
 include(CheckLibraryExists)
 include(CheckSymbolExists)
 include(CheckIncludeFiles)
+include(CheckLinkerFlag)
 
 include_directories("/usr/local/include")
 link_directories("/usr/local/lib")
@@ -75,6 +76,8 @@ endif()
 if (NOT DEFINED CMAKE_INSTALL_MANDIR)
 	set (CMAKE_INSTALL_MANDIR ${CMAKE_INSTALL_PREFIX}/man)
 endif()
+
+check_linker_flag(C "LINKER:-z,now,-z,relro" HAVE_LD_Z)
 
 check_include_files("sys/types.h;net/pfkeyv2.h" HAVE_NET_PFKEY_H)
 if(HAVE_NET_PFKEY_H)
