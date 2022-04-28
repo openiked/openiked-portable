@@ -77,6 +77,9 @@ endif()
 set(CFLAGS)
 list(APPEND CFLAGS
 	-O2
+	-fstack-protector-strong
+	-fPIE
+	-D_FORTIFY_SOURCE=2
 	-Wall
 	-Wno-pointer-sign
 	-Wno-deprecated-declarations

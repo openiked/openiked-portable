@@ -27,6 +27,9 @@ add_executable(ikectl ${SRCS})
 set(CFLAGS)
 list(APPEND CFLAGS
 	-O2
+	-fstack-protector-strong
+	-fPIE
+	-D_FORTIFY_SOURCE=2
 	-Wall
 	-Wno-pointer-sign
 	-Wno-deprecated-declarations
@@ -41,6 +44,7 @@ list(APPEND CFLAGS
 )
 
 target_compile_options(ikectl PRIVATE ${CFLAGS})
+target_link_options(ikectl PRIVATE "LINKER:-z,relro,-z,now")
 
 target_include_directories(ikectl
 	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}

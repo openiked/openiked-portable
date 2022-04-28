@@ -25,6 +25,9 @@ set(SRCS)
 set(CFLAGS)
 list(APPEND CFLAGS
 	-O2
+	-fstack-protector-strong
+	-fPIE
+	-D_FORTIFY_SOURCE=2
 	-Wall
 	-Wno-pointer-sign
 	-Wno-deprecated-declarations
@@ -98,6 +101,7 @@ add_executable(iked ${SRCS})
 
 target_compile_options(iked PRIVATE ${CFLAGS})
 target_compile_options(iked-shared PRIVATE ${CFLAGS})
+target_link_options(iked PRIVATE "LINKER:-z,relro,-z,now")
 
 target_include_directories(iked PRIVATE ${INC_DIRS})
 target_include_directories(iked-shared PRIVATE ${INC_DIRS})
