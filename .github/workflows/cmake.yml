@@ -92,3 +92,45 @@ jobs:
       working-directory: ${{github.workspace}}/build/regress/parser
       shell: bash
       run: ./test_parser
+
+  openbsd:
+    runs-on: macos-10.15
+    steps:
+    - name: Bootstrap OpenBSD-latest
+      uses: mario-campos/emulate@v1
+      with:
+        operating-system: openbsd-latest
+
+    - name: Install Dependencies
+      run: pkg_add cmake git
+
+    - name: Build
+      run: |
+        git clone https://github.com/openiked/openiked-portable.git
+        cd openiked-portable
+        mkdir build; cd build
+        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        make
+        cd regress/dh; ./dhtest
+        cd ../parser; ./test_parser
+
+  freebsd:
+    runs-on: macos-10.15
+    steps:
+    - name: Bootstrap FreeBSD-latest
+      uses: mario-campos/emulate@v1
+      with:
+        operating-system: freebsd-latest
+
+    - name: Install Dependencies
+      run: pkg install -y cmake libevent git
+
+    - name: Build
+      run: |
+        git clone https://github.com/openiked/openiked-portable.git
+        cd openiked-portable
+        mkdir build; cd build
+        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        make
+        cd regress/dh; ./dhtest
+        cd ../parser; ./test_parser
