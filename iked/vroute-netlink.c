@@ -230,25 +230,22 @@ vroute_getaddr(struct iked *env, struct imsg *imsg)
 }
 
 int
-vroute_setdns(struct iked *env, int add, struct sockaddr *dns,
+vroute_setdns(struct iked *env, int add, struct sockaddr *addr,
     unsigned int ifidx)
 {
 	struct iovec		 iov[2];
-	int			 iovcnt = 0;
 
-	if (dns == NULL)
+	if (addr == NULL)
 		return (0);
 
-	iov[0].iov_base = &ifidx;
-	iov[0].iov_len = sizeof(ifidx);
-	iovcnt++;
+	iov[0].iov_base = addr;
+	iov[0].iov_len = SA_LEN(addr);
 
-	iov[1].iov_base = dns;
-	iov[1].iov_len = SA_LEN(dns);
-	iovcnt++;
+	iov[1].iov_base = &ifidx;
+	iov[1].iov_len = sizeof(ifidx);
 
 	return (proc_composev(&env->sc_ps, PROC_PARENT,
-	    add ? IMSG_VDNS_ADD: IMSG_VDNS_DEL, iov, iovcnt));
+	    add ? IMSG_VDNS_ADD: IMSG_VDNS_DEL, iov, 2));
 }
 
 int
@@ -257,26 +254,26 @@ vroute_getdns(struct iked *env, struct imsg *imsg)
 	struct sockaddr		*dns;
 	uint8_t			*ptr;
 	size_t			 left;
-	int			 add, ifidx;
+	int			 add;
+	unsigned int		 ifidx;
 
 	ptr = imsg->data;
 	left = IMSG_DATA_SIZE(imsg);
 
-	if (left < sizeof(ifidx))
-		fatalx("bad length imsg received");
-
-	memcpy(&ifidx, ptr, sizeof(ifidx));
-	ptr += sizeof(ifidx);
-	left -= sizeof(ifidx);
-
 	if (left < sizeof(*dns))
 		fatalx("bad length imsg received");
-	dns = (struct sockaddr *) ptr;
 
+	dns = (struct sockaddr *) ptr;
 	if (left < SA_LEN(dns))
 		fatalx("bad length imsg received");
 	ptr += SA_LEN(dns);
 	left -= SA_LEN(dns);
+
+	if (left != sizeof(ifidx))
+		fatalx("bad length imsg received");
+	memcpy(&ifidx, ptr, sizeof(ifidx));
+	ptr += sizeof(ifidx);
+	left -= sizeof(ifidx);
 
 	add = (imsg->hdr.type == IMSG_VDNS_ADD);
 	return (vroute_dodns(env, dns, add, ifidx));
