@@ -62,6 +62,7 @@ my @tests = (
   "test_config_addr",
   "test_config_addrpool",
   "test_lifetime",
+  "test_dstid_fail",
 );
 
 if (defined $options{l}) {
@@ -546,6 +547,25 @@ sub test_lifetime {
 		'expect' => ["spi=0x[0-9a-f]{16}: established peer $left{'addr'}"],
 	);
 	# XXX: wait and check rekey log message
+	test_basic(\%lconf, \%rconf);
+}
+
+sub test_dstid_fail {
+	my %lconf = (
+		'from' => $left{'addr'},
+		'to' => $right{'addr'},
+		'srcid' => "$left{'name'}-from-ca-both",
+		'mode' => "active",
+		'expect' => ["spi=0x[0-9a-f]{16}: sa_free: authentication failed notification from peer"],
+	);
+	my %rconf = (
+		'from' => $right{'addr'},
+		'to' => $left{'addr'},
+		'srcid' => "$right{'name'}-from-ca-both",
+		'dstid' => "dstid INVALID_ID",
+		'mode' => "passive",
+		'expect' => ["spi=0x[0-9a-f]{16}: ikev2_ike_auth_recv: no compatible policy found"],
+	);
 	test_basic(\%lconf, \%rconf);
 }
 
