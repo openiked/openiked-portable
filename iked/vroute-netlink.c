@@ -29,6 +29,7 @@
 
 #include <event.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <iked.h>
 
@@ -724,13 +725,23 @@ vroute_dodns(struct iked *env, struct sockaddr *dns, int add,
 	if (if_indextoname(ifindex, ifname) == NULL)
 		return (-1);
 
+#define resolvectl(...) do {				\
+		if (fork() == 0) {			\
+			execl("/usr/bin/resolvectl",	\
+			    __VA_ARGS__);		\
+			exit(0);			\
+		}					\
+	} while (0)
+
 	if (add && dns) {
-		/* XXX: use native dbus instead */
-		run_command("resolvectl dns %s %s", ifname,
-		    print_host(dns, NULL, 0));
-		run_command("resolvectl domain %s ~.", ifname);
+		resolvectl("/usr/bin/resolvectl", "dns", ifname,
+		    print_host(dns, NULL, 0), (char *) NULL);
+
+		resolvectl("/usr/bin/resolvectl", "domain", ifname,
+		    "~.", (char *) NULL);
 	} else {
-		run_command("resolvectl revert %s", ifname);
+		resolvectl("/usr/bin/resolvectl", "revert", ifname,
+		    (char *) NULL);
 	}
 #endif
 	return (0);
