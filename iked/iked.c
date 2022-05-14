@@ -401,8 +401,10 @@ parent_sig_handler(int sig, short event, void *arg)
 					fail = 1;
 					len = asprintf(&cause,
 					    "exited abnormally");
-				} else
+				} else {
 					len = asprintf(&cause, "exited okay");
+					break;
+				}
 			} else
 				fatalx("unexpected cause of SIGCHLD");
 

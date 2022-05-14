@@ -1227,8 +1227,6 @@ void	 print_debug(const char *, ...)
 	    __attribute__((format(printf, 1, 2)));
 void	 print_verbose(const char *, ...)
 	    __attribute__((format(printf, 1, 2)));
-int	 run_command(const char *, ...);
-int	 run_command_va(const char *, va_list);
 
 /* imsg_util.c */
 struct ibuf *
