@@ -575,15 +575,15 @@ sub test_basic {
 	setup_config("$sub_name-left", $lconf);
 	system("chmod 0600 $BUILDDIR/$sub_name-left.conf");
 	system <<~DOC;
-	echo "cd /tmp
-	put $BUILDDIR/$sub_name-left.conf test.conf" | sftp -q $left{'ssh'} -q > /dev/null;
+	echo "rename $left{'etc_dir'}/iked.conf $left{'etc_dir'}/iked.conf.old
+	put $BUILDDIR/$sub_name-left.conf $left{'etc_dir'}/iked.conf" | sftp -q $left{'ssh'} -q > /dev/null;
 	DOC
 
 	setup_config("$sub_name-right", $rconf);
 	system("chmod 0600 $BUILDDIR/$sub_name-right.conf");
 	system <<~DOC;
-	echo "cd /tmp
-	put $BUILDDIR/$sub_name-right.conf test.conf" | sftp -q $right{'ssh'} -q > /dev/null;
+	echo "rename $right{'etc_dir'}/iked.conf $right{'etc_dir'}/iked.conf.old
+	put $BUILDDIR/$sub_name-right.conf $right{'etc_dir'}/iked.conf" | sftp -q $right{'ssh'} -q > /dev/null;
 	DOC
 
 	setup_start(\%left);
@@ -603,13 +603,13 @@ sub test_basic {
 sub cleanup {
 	setup_stop(\%left);
 	setup_stop(\%right);
-	system("ssh -q $left{'ssh'} \"rm /tmp/test.conf; cat /tmp/test.log >> /tmp/iked-live.log; rm /tmp/test.log\" 2>/dev/null");
-	system("ssh -q $right{'ssh'} \"rm /tmp/test.conf; cat /tmp/test.log >> /tmp/iked-live.log; rm /tmp/test.log\" 2>/dev/null");
+	system("ssh -q $left{'ssh'} \"mv $left{'etc_dir'}/iked.conf.old $left{'etc_dir'}/iked.conf; cat /tmp/test.log >> /tmp/iked-live.log; rm /tmp/test.log\" 2>/dev/null");
+	system("ssh -q $right{'ssh'} \"mv $right{'etc_dir'}/iked.conf.old $right{'etc_dir'}/iked.conf; cat /tmp/test.log >> /tmp/iked-live.log; rm /tmp/test.log\" 2>/dev/null");
 }
 
 sub setup_start {
 	my ($peer) = @_;
-	system("ssh -q $peer->{'ssh'} \"$peer->{'cmd_flush'}; pkill iked; iked -dvf /tmp/test.conf 2> /tmp/test.log\&\"&")
+	system("ssh -q $peer->{'ssh'} \"$peer->{'cmd_flush'}; pkill iked; iked -dv 2> /tmp/test.log\&\"&")
 }
 
 sub setup_stop {
@@ -689,29 +689,39 @@ sub setup_config {
 # XXX: needs less globals
 sub deploy_certs {
 	system <<~DOC;
-	echo "cd $left{'etc_dir'}\n
-	put $BUILDDIR/left-from-ca-both.crt certs\n
-	put $BUILDDIR/left-from-ca-right.crt certs\n
-	put $BUILDDIR/left-from-ca-none.crt certs\n
-	put $BUILDDIR/right-from-ca-none.crt certs\n
+	echo "cd $left{'etc_dir'}/iked\n
+	mkdir certs\n
+	put $BUILDDIR/left-from-ca-both.crt certs/\n
+	put $BUILDDIR/left-from-ca-right.crt certs/\n
+	put $BUILDDIR/left-from-ca-none.crt certs/\n
+	put $BUILDDIR/right-from-ca-none.crt certs/\n
+	mkdir private\n
 	put $BUILDDIR/left.key private/local.key\n
 	put $BUILDDIR/left.pub local.pub\n
+	mkdir pubkeys\n
+	mkdir pubkeys/fqdn\n
 	put $BUILDDIR/right.pub pubkeys/fqdn/right-pub\n
-	put $BUILDDIR/ca-left.crt ca\n
-	put $BUILDDIR/ca-both.crt ca\n" | sftp -q $left{'ssh'} -q > /dev/null;
+	mkdir ca\n
+	put $BUILDDIR/ca-left.crt ca/\n
+	put $BUILDDIR/ca-both.crt ca/\n" | sftp -q $left{'ssh'} -q > /dev/null;
 	DOC
 
 	system <<~"DOC";
-	echo "cd $right{'etc_dir'}\n
-	put $BUILDDIR/right-from-ca-both.crt certs\n
-	put $BUILDDIR/right-from-ca-left.crt certs\n
-	put $BUILDDIR/right-from-ca-none.crt certs\n
-	put $BUILDDIR/left-from-ca-none.crt certs\n
+	echo "cd $right{'etc_dir'}/iked\n
+	mkdir certs\n
+	put $BUILDDIR/right-from-ca-both.crt certs/\n
+	put $BUILDDIR/right-from-ca-left.crt certs/\n
+	put $BUILDDIR/right-from-ca-none.crt certs/\n
+	put $BUILDDIR/left-from-ca-none.crt certs/\n
+	mkdir private\n
 	put $BUILDDIR/right.key private/local.key\n
 	put $BUILDDIR/right.pub local.pub\n
+	mkdir pubkeys\n
+	mkdir pubkeys/fqdn\n
 	put $BUILDDIR/left.pub pubkeys/fqdn/left-pub\n
-	put $BUILDDIR/ca-right.crt ca\n
-	put $BUILDDIR/ca-both.crt ca\n" | sftp -q $right{'ssh'} -q > /dev/null;
+	mkdir ca\n
+	put $BUILDDIR/ca-right.crt ca/\n
+	put $BUILDDIR/ca-both.crt ca/\n" | sftp -q $right{'ssh'} -q > /dev/null;
 	DOC
 }
 
@@ -719,14 +729,14 @@ sub init_osdep {
 	my ($peer) = @_;
 
 	$peer->{'os'} = `ssh -q $peer->{'ssh'} uname`;
-	$peer->{'etc_dir'} = "/etc/iked";
+	$peer->{'etc_dir'} = "/etc";
 	if (($peer->{'os'} cmp "OpenBSD\n") == 0) {
 		$peer->{'cmd_flush'} = "ipsecctl -F";
 	} elsif (($peer->{'os'} cmp "Linux\n") == 0) {
 		$peer->{'cmd_flush'} = "ip x p f; ip x s f";
 	} elsif (($peer->{'os'} cmp "FreeBSD\n") == 0) {
 		$peer->{'cmd_flush'} = "setkey -PF; setkey -F";
-		$peer->{'etc_dir'} = "/usr/local/etc/iked";
+		$peer->{'etc_dir'} = "/usr/local/etc";
 	} else {
 		print("error: unsupported OS $peer->{'os'}\n");
 		exit 1;
