@@ -4411,7 +4411,7 @@ ikev2_init_create_child_sa(struct iked *env, struct iked_message *msg)
 		else
 			nr = sa->sa_rnonce;
 		/*
-		 * If the exchange initated by peer has smaller nonce,
+		 * If the exchange initated by us has smaller nonce,
 		 * then we have to delete our SAs.
 		 */
 		if (ikev2_nonce_cmp(nr, ni) < 0) {
