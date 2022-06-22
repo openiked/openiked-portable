@@ -4405,16 +4405,16 @@ ikev2_init_create_child_sa(struct iked *env, struct iked_message *msg)
 	if (csa && (ni = sa->sa_simult) != NULL) {
 		log_info("%s: resolving simultaneous CHILD SA rekeying",
 		    SPI_SA(sa, __func__));
-		/* set nr to minimum nonce for exchange initiated by peer */
+		/* set nr to minimum nonce for exchange initiated by us */
 		if (ikev2_nonce_cmp(sa->sa_inonce, sa->sa_rnonce) < 0)
 			nr = sa->sa_inonce;
 		else
 			nr = sa->sa_rnonce;
 		/*
-		 * If the exchange initated by us has smaller nonce,
+		 * If the exchange initated by peer has smaller nonce,
 		 * then we have to delete our SAs.
 		 */
-		if (ikev2_nonce_cmp(ni, nr) < 0) {
+		if (ikev2_nonce_cmp(nr, ni) < 0) {
 			ret = ikev2_childsa_delete_proposed(env, sa,
 			    &sa->sa_proposals);
 			goto done;
