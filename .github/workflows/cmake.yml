@@ -94,7 +94,7 @@ jobs:
       run: ./test_parser
 
   openbsd:
-    runs-on: macos-10.15
+    runs-on: macos-12
     steps:
     - name: Bootstrap OpenBSD-latest
       uses: mario-campos/emulate@v1
@@ -115,7 +115,7 @@ jobs:
         cd ../parser; ./test_parser
 
   freebsd:
-    runs-on: macos-10.15
+    runs-on: macos-12
     steps:
     - name: Bootstrap FreeBSD-latest
       uses: mario-campos/emulate@v1
