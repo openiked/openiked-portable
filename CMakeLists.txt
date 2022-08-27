@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
+# Copyright (c) 2020-2022 Tobias Heider <tobhe@openbsd.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -33,8 +33,15 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
 	add_definitions(-DIKED_CA="${CMAKE_INSTALL_SYSCONFDIR}/iked/")
 	add_definitions(-DHAVE_APPLE_NATT)
 	add_definitions(-DHAVE_SOCKADDR_SA_LEN)
-	include_directories("/usr/local/opt/openssl@1.1/include")
-	link_directories("/usr/local/opt/openssl@1.1/lib")
+	if (HOMEBREW AND CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
+		include_directories("/opt/homebrew/include")
+		link_directories("/opt/homebrew/lib")
+		include_directories("/opt/homebrew/opt/openssl@1.1/include")
+        	link_directories("/opt/homebrew/opt/openssl@1.1/lib")
+	else()
+		include_directories("/usr/local/opt/openssl@1.1/include")
+		link_directories("/usr/local/opt/openssl@1.1/lib")
+	endif()
 	set(HAVE_VROUTE ON)
 elseif(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
 	if (NOT DEFINED CMAKE_INSTALL_SYSCONFDIR)
