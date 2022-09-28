@@ -221,10 +221,15 @@ config_free_policy(struct iked *env, struct iked_policy *pol)
 	if (pol->pol_flags & IKED_POLICY_REFCNT)
 		goto remove;
 
+	/*
+	 * Remove policy from the sc_policies list, but increment
+	 * refcount for every SA linked for the policy.
+	 */
+	pol->pol_flags |= IKED_POLICY_REFCNT;
+
 	TAILQ_REMOVE(&env->sc_policies, pol, pol_entry);
 
 	TAILQ_FOREACH(sa, &pol->pol_sapeers, sa_peer_entry) {
-		/* Remove from the policy list, but keep for existing SAs */
 		if (sa->sa_policy == pol)
 			policy_ref(env, pol);
 		else
