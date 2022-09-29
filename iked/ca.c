@@ -42,6 +42,11 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <openssl/rsa.h>
+#include <openssl/opensslv.h>
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000
+#include <openssl/provider.h>
+#endif
 
 #include "iked.h"
 #include "ikev2.h"
@@ -1960,12 +1965,28 @@ ca_x509_subjectaltname_get(X509 *cert, struct iked_id *retid)
 void
 ca_sslinit(void)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x30000000
+	/*
+	 * This provider contains all the regular and safe algorithms,
+	 * such as AES, SHA...
+	 */
+	if (OSSL_PROVIDER_load(NULL, "default") == NULL)
+		fatal("error enabling default provider");
+
+	/*
+	 * This provider contains unsafe or obsolete, such as MD4 which
+	 * we need for MSCHAPv2
+	 */
+	if (OSSL_PROVIDER_load(NULL, "legacy") == NULL)
+		fatal("error enabling legacy provider");
+#else
 	OpenSSL_add_all_algorithms();
 	ERR_load_crypto_strings();
 
 	/* Init hardware crypto engines. */
 	ENGINE_load_builtin_engines();
 	ENGINE_register_all_complete();
+#endif
 }
 
 void
