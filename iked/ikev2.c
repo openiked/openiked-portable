@@ -7001,10 +7001,10 @@ ikev2_print_id(struct iked_id *id, char *idstr, size_t idstrlen)
 		if ((str = ca_asn1_name(ptr, len)) == NULL)
 			return (-1);
 		if (strlcpy(idstr, str, idstrlen) >= idstrlen) {
-			free(str);
+			OPENSSL_free(str);
 			return (-1);
 		}
-		free(str);
+		OPENSSL_free(str);
 		break;
 	default:
 		/* XXX test */
