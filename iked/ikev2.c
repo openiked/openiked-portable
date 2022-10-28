@@ -6955,8 +6955,8 @@ ikev2_print_id(struct iked_id *id, char *idstr, size_t idstrlen)
 	    strlcat(idstr, "/", idstrlen) >= idstrlen)
 		return (-1);
 
-	idstr += strlen(idstr);
 	idstrlen -= strlen(idstr);
+	idstr += strlen(idstr);
 
 	switch (id->id_type) {
 	case IKEV2_ID_IPV4:
