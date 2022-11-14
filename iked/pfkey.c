@@ -863,16 +863,22 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 		nat_type.sadb_x_nat_t_type_len = sizeof(nat_type) / 8;
 		nat_type.sadb_x_nat_t_type_exttype = SADB_X_EXT_NAT_T_TYPE;
 		nat_type.sadb_x_nat_t_type_type = UDP_ENCAP_ESPINUDP;
+
 		bzero(&nat_sport, sizeof(nat_sport));
 		nat_sport.sadb_x_nat_t_port_len = sizeof(nat_sport) / 8;
 		nat_sport.sadb_x_nat_t_port_exttype = SADB_X_EXT_NAT_T_SPORT;
 		nat_sport.sadb_x_nat_t_port_port =
-		    sa->csa_ikesa->sa_local.addr_port;
+		    sa->csa_dir == IPSP_DIRECTION_OUT ?
+		    sa->csa_ikesa->sa_local.addr_port :
+		    sa->csa_ikesa->sa_peer.addr_port;
+
 		bzero(&nat_dport, sizeof(nat_dport));
 		nat_dport.sadb_x_nat_t_port_len = sizeof(nat_dport) / 8;
 		nat_dport.sadb_x_nat_t_port_exttype = SADB_X_EXT_NAT_T_DPORT;
 		nat_dport.sadb_x_nat_t_port_port =
-		    sa->csa_ikesa->sa_peer.addr_port;
+		    sa->csa_dir == IPSP_DIRECTION_OUT ?
+		    sa->csa_ikesa->sa_peer.addr_port :
+		    sa->csa_ikesa->sa_local.addr_port;
 
 		log_debug("%s: NAT-T: type=%s (%d) sport=%d dport=%d",
 		    __func__,
