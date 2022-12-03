@@ -107,6 +107,11 @@ if(HAVE_UNISTD_H)
 	add_definitions(-DHAVE_UNISTD_H)
 endif()
 
+check_include_files(endian.h HAVE_ENDIAN_H)
+if(HAVE_ENDIAN_H)
+	add_definitions(-DHAVE_ENDIAN_H)
+endif()
+
 check_include_files(dirent.h HAVE_DIRENT_H)
 if(HAVE_DIRENT_H)
 	add_definitions(-DHAVE_DIRENT_H)
