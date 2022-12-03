@@ -27,7 +27,7 @@ target_include_directories(test_parser
 )
 
 target_link_libraries(test_parser
-	PRIVATE util event crypto ssl test_helper compat iked-shared
+	PRIVATE ${COMMON_LIBS} test_helper compat iked-shared
 )
 
 target_compile_options(test_parser PRIVATE ${CFLAGS})

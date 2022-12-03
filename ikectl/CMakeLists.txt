@@ -54,7 +54,7 @@ target_include_directories(ikectl
 )
 
 target_link_libraries(ikectl
-	PRIVATE util event crypto ssl compat
+	PRIVATE ${COMMON_LIBS} compat
 )
 
 install(TARGETS ikectl RUNTIME DESTINATION sbin)

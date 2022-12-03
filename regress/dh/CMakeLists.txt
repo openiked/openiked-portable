@@ -29,7 +29,7 @@ target_include_directories(dhtest
 )
 
 target_link_libraries(dhtest
-	PRIVATE util crypto compat
+	PRIVATE ${COMMON_LIBS} compat
 )
 
 target_compile_options(dhtest PRIVATE ${CFLAGS})

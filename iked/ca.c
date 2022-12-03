@@ -43,6 +43,11 @@
 #include <openssl/sha.h>
 #include <openssl/rsa.h>
 #include <openssl/opensslv.h>
+#if !defined(DT_REG)
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
 
 #if OPENSSL_VERSION_NUMBER >= 0x30000000
 #include <openssl/provider.h>
@@ -847,6 +852,9 @@ ca_reload(struct iked *env)
 	unsigned int		 len;
 	X509_NAME		*subj;
 	char			*subj_name;
+#if !defined(DT_REG)
+	struct stat		st;
+#endif
 
 	/*
 	 * Load CAs
@@ -855,8 +863,13 @@ ca_reload(struct iked *env)
 		return (-1);
 
 	while ((entry = readdir(dir)) != NULL) {
+#if defined(DT_REG)
 		if ((entry->d_type != DT_REG) &&
 		    (entry->d_type != DT_LNK))
+#else
+		if (stat(entry->d_name, &st) == 0 &&
+		    !S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode))
+#endif
 			continue;
 
 		if (snprintf(file, sizeof(file), "%s%s",
@@ -881,8 +894,13 @@ ca_reload(struct iked *env)
 		return (-1);
 
 	while ((entry = readdir(dir)) != NULL) {
+#if defined(DT_REG)
 		if ((entry->d_type != DT_REG) &&
 		    (entry->d_type != DT_LNK))
+#else
+		if (stat(entry->d_name, &st) == 0 &&
+		    !S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode))
+#endif
 			continue;
 
 		if (snprintf(file, sizeof(file), "%s%s",
@@ -961,8 +979,13 @@ ca_reload(struct iked *env)
 		return (-1);
 
 	while ((entry = readdir(dir)) != NULL) {
+#if defined(DT_REG)
 		if ((entry->d_type != DT_REG) &&
 		    (entry->d_type != DT_LNK))
+#else
+		if (stat(entry->d_name, &st) == 0 &&
+		    !S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode))
+#endif
 			continue;
 
 		if (snprintf(file, sizeof(file), "%s%s",

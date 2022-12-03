@@ -29,6 +29,14 @@
 #ifdef HAVE_NETINET6_IPSEC_H
 #include <netinet6/ipsec.h>
 #endif
+#ifdef HAVE_NET_PFPOLICY_H
+#include <net/pfpolicy.h>
+#endif
+
+#if defined (HAVE_NET_PFPOLICY_H)
+#define IPSP_DIRECTION_IN	SPD_RULE_FLAG_INBOUND
+#define IPSP_DIRECTION_OUT	SPD_RULE_FLAG_OUTBOUND
+#endif
 
 #if !defined HAVE_IPSP_H && (defined HAVE_NET_IPSEC_H || \
     defined HAVE_LINUX_IPSEC_H || defined HAVE_NETINET6_IPSEC_H)
