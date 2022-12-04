@@ -13,8 +13,8 @@
 #include_next <sys/types.h>
 #endif
 
-#ifndef LIBCRYPTOCOMPAT_SYS_TYPES_H
-#define LIBCRYPTOCOMPAT_SYS_TYPES_H
+#ifndef IKED_COMPAT_SYS_TYPES_H
+#define IKED_COMPAT_SYS_TYPES_H
 
 #include <stdint.h>
 

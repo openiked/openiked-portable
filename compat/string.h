@@ -3,8 +3,8 @@
  * string.h compatibility shim
  */
 
-#ifndef LIBCRYPTOCOMPAT_STRING_H
-#define LIBCRYPTOCOMPAT_STRING_H
+#ifndef IKED_COMPAT_STRING_H
+#define IKED_COMPAT_STRING_H
 
 #ifdef _MSC_VER
 #if _MSC_VER >= 1900

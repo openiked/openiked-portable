@@ -13,8 +13,8 @@
 #include_next <stdlib.h>
 #endif
 
-#ifndef LIBCRYPTOCOMPAT_STDLIB_H
-#define LIBCRYPTOCOMPAT_STDLIB_H
+#ifndef IKED_COMPAT_STDLIB_H
+#define IKED_COMPAT_STDLIB_H
 
 #include <sys/types.h>
 #include <stdint.h>

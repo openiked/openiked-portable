@@ -3,8 +3,8 @@
  * unistd.h compatibility shim
  */
 
-#ifndef LIBCRYPTOCOMPAT_UNISTD_H
-#define LIBCRYPTOCOMPAT_UNISTD_H
+#ifndef IKED_COMPAT_UNISTD_H
+#define IKED_COMPAT_UNISTD_H
 
 #ifndef _MSC_VER
 
