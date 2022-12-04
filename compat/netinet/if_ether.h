@@ -70,16 +70,16 @@
  * Ethernet address - 6 octets
  */
 struct ether_addr {
-	u_int8_t ether_addr_octet[ETHER_ADDR_LEN];
+	uint8_t ether_addr_octet[ETHER_ADDR_LEN];
 };
 
 /*
  * The length of the combined header.
  */
 struct	ether_header {
-	u_int8_t  ether_dhost[ETHER_ADDR_LEN];
-	u_int8_t  ether_shost[ETHER_ADDR_LEN];
-	u_int16_t ether_type;
+	uint8_t  ether_dhost[ETHER_ADDR_LEN];
+	uint8_t  ether_shost[ETHER_ADDR_LEN];
+	uint16_t ether_type;
 };
 
 /*
@@ -87,11 +87,11 @@ struct	ether_header {
  */
 
 struct  ether_vlan_header {
-        u_char  evl_dhost[ETHER_ADDR_LEN];
-        u_char  evl_shost[ETHER_ADDR_LEN];
-        u_int16_t evl_encap_proto;
-        u_int16_t evl_tag;
-        u_int16_t evl_proto;
+        uchar  evl_dhost[ETHER_ADDR_LEN];
+        uchar  evl_shost[ETHER_ADDR_LEN];
+        uint16_t evl_encap_proto;
+        uint16_t evl_tag;
+        uint16_t evl_proto;
 };
 
 /*
@@ -103,10 +103,10 @@ struct  ether_vlan_header {
  */
 struct	ether_arp {
 	struct	 arphdr ea_hdr;			/* fixed-size header */
-	u_int8_t arp_sha[ETHER_ADDR_LEN];	/* sender hardware address */
-	u_int8_t arp_spa[4];			/* sender protocol address */
-	u_int8_t arp_tha[ETHER_ADDR_LEN];	/* target hardware address */
-	u_int8_t arp_tpa[4];			/* target protocol address */
+	uint8_t arp_sha[ETHER_ADDR_LEN];	/* sender hardware address */
+	uint8_t arp_spa[4];			/* sender protocol address */
+	uint8_t arp_tha[ETHER_ADDR_LEN];	/* target hardware address */
+	uint8_t arp_tpa[4];			/* target protocol address */
 };
 #define	arp_hrd	ea_hdr.ar_hrd
 #define	arp_pro	ea_hdr.ar_pro

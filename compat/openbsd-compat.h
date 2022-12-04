@@ -207,13 +207,13 @@ typedef int evutil_socket_t;
 #define SADB_X_EXT_NATT_DETECTED_PEER	0x1000	/* Opposite of KEEPALIVE */
 
 struct sadb_sa_natt {
-	u_int16_t	 sadb_sa_natt_port;
+	uint16_t	 sadb_sa_natt_port;
 	union {
-		u_int16_t	 sadb_reserved0;
-		u_int16_t	 sadb_sa_natt_interval;
+		uint16_t	 sadb_reserved0;
+		uint16_t	 sadb_sa_natt_interval;
 	};
-	u_int16_t	 sadb_sa_natt_offload_interval;
-	u_int16_t	 sadb_sa_natt_src_port;
+	uint16_t	 sadb_sa_natt_offload_interval;
+	uint16_t	 sadb_sa_natt_src_port;
 };
 #endif
 
