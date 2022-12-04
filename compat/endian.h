@@ -3,8 +3,8 @@
  * endian.h compatibility shim
  */
 
-#ifndef IKED_COMPAT_STRING_H
-#define IKED_COMPAT_STRING_H
+#ifndef IKED_COMPAT_ENDIAN_H
+#define IKED_COMPAT_ENDIAN_H
 
 #ifdef HAVE_ENDIAN_H
 #include_next <endian.h>
@@ -70,4 +70,4 @@
 #endif
 #endif
 
-#endif /* IKED_COMPAT_STRING_H */
+#endif /* IKED_COMPAT_ENDIAN_H */
