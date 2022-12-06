@@ -134,3 +134,21 @@ jobs:
         make
         cd regress/dh; ./dhtest
         cd ../parser; ./test_parser
+
+  netbsd:
+    runs-on: macos-12
+    steps:
+    - name: Bootstrap NetBSD-latest
+      uses: mario-campos/emulate@v1
+      with:
+        operating-system: netbsd-latest
+
+    - name: Build
+      run: |
+        git clone https://github.com/openiked/openiked-portable.git
+        cd openiked-portable
+        mkdir build; cd build
+        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        make
+        cd regress/dh; ./dhtest
+        cd ../parser; ./test_parser
