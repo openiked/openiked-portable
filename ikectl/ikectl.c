@@ -452,32 +452,32 @@ show_stats(struct imsg *imsg, int quiet)
 #define p(f, m) if (stat->f || !quiet) \
 	printf(m, stat->f, plural(stat->f))
 
-	p(ikes_sa_created, "\t%llu IKE SA%s created\n");
-	p(ikes_sa_established_total, "\t%llu IKE SA%s established\n");
-	p(ikes_sa_established_current, "\t%llu IKE SA%s currently established\n");
-	p(ikes_sa_established_failures, "\t%llu IKE SA%s failed to establish\n");
-	p(ikes_sa_proposals_negotiate_failures, "\t%llu failed proposal negotiation%s\n");
-	p(ikes_sa_rekeyed, "\t%llu IKE SA%s rekeyed\n");
-	p(ikes_sa_removed, "\t%llu IKE SA%s removed\n");
-	p(ikes_csa_created, "\t%llu Child SA%s created\n");
-	p(ikes_csa_removed, "\t%llu Child SA%s removed\n");
-	p(ikes_msg_sent, "\t%llu message%s sent\n");
-	p(ikes_msg_send_failures, "\t%llu message%s could not be sent\n");
-	p(ikes_msg_rcvd, "\t%llu message%s received\n");
-	p(ikes_msg_rcvd_dropped, "\t%llu message%s dropped\n");
-	p(ikes_msg_rcvd_busy, "\t%llu request%s dropped, response being worked on\n");
-	p(ikes_retransmit_response, "\t%llu response%s retransmitted\n");
-	p(ikes_retransmit_request, "\t%llu request%s retransmitted\n");
-	p(ikes_retransmit_limit, "\t%llu request%s timed out\n");
-	p(ikes_frag_sent, "\t%llu fragment%s sent\n");
-	p(ikes_frag_send_failures, "\t%llu fragment%s could not be sent\n");
-	p(ikes_frag_rcvd, "\t%llu fragment%s received\n");
-	p(ikes_frag_rcvd_drop, "\t%llu fragment%s dropped\n");
-	p(ikes_frag_reass_ok, "\t%llu fragment%s reassembled\n");
-	p(ikes_frag_reass_drop, "\t%llu fragment%s could not be reassembled\n");
-	p(ikes_update_addresses_sent, "\t%llu update addresses request%s sent\n");
-	p(ikes_dpd_sent, "\t%llu dpd request%s sent\n");
-	p(ikes_keepalive_sent, "\t%llu keepalive message%s sent\n");
+	p(ikes_sa_created, "\t%lu IKE SA%s created\n");
+	p(ikes_sa_established_total, "\t%lu IKE SA%s established\n");
+	p(ikes_sa_established_current, "\t%lu IKE SA%s currently established\n");
+	p(ikes_sa_established_failures, "\t%lu IKE SA%s failed to establish\n");
+	p(ikes_sa_proposals_negotiate_failures, "\t%lu failed proposal negotiation%s\n");
+	p(ikes_sa_rekeyed, "\t%lu IKE SA%s rekeyed\n");
+	p(ikes_sa_removed, "\t%lu IKE SA%s removed\n");
+	p(ikes_csa_created, "\t%lu Child SA%s created\n");
+	p(ikes_csa_removed, "\t%lu Child SA%s removed\n");
+	p(ikes_msg_sent, "\t%lu message%s sent\n");
+	p(ikes_msg_send_failures, "\t%lu message%s could not be sent\n");
+	p(ikes_msg_rcvd, "\t%lu message%s received\n");
+	p(ikes_msg_rcvd_dropped, "\t%lu message%s dropped\n");
+	p(ikes_msg_rcvd_busy, "\t%lu request%s dropped, response being worked on\n");
+	p(ikes_retransmit_response, "\t%lu response%s retransmitted\n");
+	p(ikes_retransmit_request, "\t%lu request%s retransmitted\n");
+	p(ikes_retransmit_limit, "\t%lu request%s timed out\n");
+	p(ikes_frag_sent, "\t%lu fragment%s sent\n");
+	p(ikes_frag_send_failures, "\t%lu fragment%s could not be sent\n");
+	p(ikes_frag_rcvd, "\t%lu fragment%s received\n");
+	p(ikes_frag_rcvd_drop, "\t%lu fragment%s dropped\n");
+	p(ikes_frag_reass_ok, "\t%lu fragment%s reassembled\n");
+	p(ikes_frag_reass_drop, "\t%lu fragment%s could not be reassembled\n");
+	p(ikes_update_addresses_sent, "\t%lu update addresses request%s sent\n");
+	p(ikes_dpd_sent, "\t%lu dpd request%s sent\n");
+	p(ikes_keepalive_sent, "\t%lu keepalive message%s sent\n");
 #undef p
 	return (done);
 }
