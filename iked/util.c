@@ -109,7 +109,8 @@ socket_getaddr(int s, struct sockaddr_storage *ss)
 int
 socket_bypass(int s, struct sockaddr *sa)
 {
-#if defined(__OpenBSD__)
+#if defined(IPSEC_LEVEL_BYPASS)
+	/* OpenBSD */
 	int	 v, *a;
 	int	 a4[] = {
 		    IPPROTO_IP,
@@ -161,7 +162,8 @@ socket_bypass(int s, struct sockaddr *sa)
 		return (-1);
 	}
 #endif
-#else /* __OpenBSD__ */
+#elif defined(IP_IPSEC_POLICY)
+	/* Linux/FreeBSD/NetBSD */
 	int	*a;
 	int	 a4[] = {
 		    IPPROTO_IP,
@@ -200,8 +202,9 @@ socket_bypass(int s, struct sockaddr *sa)
 		log_warn("%s: IPSEC_DIR_OUTBOUND", __func__);
 		return (-1);
 	}
-#endif /* !__OpenBSD__ */
-
+#elif defined(IP_SEC_OPT)
+	/* illumos */
+#endif
 	return (0);
 }
 
@@ -228,11 +231,13 @@ udp_bind(struct sockaddr *sa, in_port_t port)
 		goto bad;
 	}
 
+#if defined(SO_REUSEPORT) /* not supported on illumos */
 	val = 1;
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT, &val, sizeof(int)) == -1) {
 		log_warn("%s: failed to set reuseport", __func__);
 		goto bad;
 	}
+#endif
 	val = 1;
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int)) == -1) {
 		log_warn("%s: failed to set reuseaddr", __func__);

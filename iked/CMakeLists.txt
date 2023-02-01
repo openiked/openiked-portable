@@ -65,6 +65,8 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 	list(APPEND SRCS ipsec.c pfkey.c)
 elseif(CMAKE_SYSTEM_NAME MATCHES "NetBSD")
 	list(APPEND SRCS ipsec.c pfkey.c)
+elseif(CMAKE_SYSTEM_NAME MATCHES "SunOS")
+	list(APPEND SRCS ipsec-none.c)
 endif()
 if(HAVE_VROUTE)
 	list(APPEND SRCS vroute.c)
@@ -114,25 +116,33 @@ if(CLUSTERFUZZ)
 	)
 else()
 	target_link_libraries(iked-shared
-		PRIVATE util event crypto ssl compat
+		PRIVATE ${COMMON_LIBS} compat
 	)
 endif()
 
 if(WITH_APPARMOR)
 	target_link_libraries(iked
-		PRIVATE util event crypto ssl compat iked-shared apparmor
+		PRIVATE ${COMMON_LIBS} compat iked-shared apparmor
 	)
 else()
 	target_link_libraries(iked
-		PRIVATE util event crypto ssl compat iked-shared
+		PRIVATE ${COMMON_LIBS} compat iked-shared
 	)
 endif()
 
-add_custom_command(
-	OUTPUT parse.c
-	COMMAND yacc -o parse.c ${CMAKE_CURRENT_SOURCE_DIR}/parse.y
-	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/parse.y
-)
+if (CMAKE_SYSTEM_NAME MATCHES "SunOS")
+	add_custom_command(
+		OUTPUT parse.c
+		COMMAND yacc ${CMAKE_CURRENT_SOURCE_DIR}/parse.y && mv y.tab.c parse.c
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/parse.y
+	)
+else()
+	add_custom_command(
+		OUTPUT parse.c
+		COMMAND yacc -o parse.c ${CMAKE_CURRENT_SOURCE_DIR}/parse.y
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/parse.y
+	)
+endif()
 
 add_custom_command(
 	OUTPUT ikev2_map.c

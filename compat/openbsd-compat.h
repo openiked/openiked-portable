@@ -217,4 +217,8 @@ struct sadb_sa_natt {
 };
 #endif
 
+#if !defined(WAIT_ANY)
+#define WAIT_ANY -1
+#endif
+
 #endif /* !_OPENBSD_COMPAT_H */
