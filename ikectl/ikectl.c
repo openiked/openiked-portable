@@ -450,7 +450,7 @@ show_stats(struct imsg *imsg, int quiet)
 	stat = imsg->data;
 	printf("ike:\n");
 #define p(f, m) if (stat->f || !quiet) \
-	printf(m, stat->f, plural(stat->f))
+	printf(m, (unsigned long long)stat->f, plural(stat->f))
 
 	p(ikes_sa_created, "\t%llu IKE SA%s created\n");
 	p(ikes_sa_established_total, "\t%llu IKE SA%s established\n");
