@@ -1,4 +1,4 @@
-/*	$OpenBSD: vroute.c,v 1.17 2022/07/18 19:32:16 tobhe Exp $	*/
+/*	$OpenBSD: vroute.c,v 1.18 2023/02/10 19:51:08 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2021 Tobias Heider <tobhe@openbsd.org>
@@ -83,12 +83,14 @@ TAILQ_HEAD(vroute_routes, vroute_route);
 struct vroute_dns {
 	struct	sockaddr_storage	vd_addr;
 	int				vd_ifidx;
+	TAILQ_ENTRY(vroute_dns)		vd_entry;
 };
+TAILQ_HEAD(vroute_dnss, vroute_dns);
 
 struct iked_vroute_sc {
 	struct vroute_addrs	 ivr_addrs;
 	struct vroute_routes	 ivr_routes;
-	struct vroute_dns	*ivr_dns;
+	struct vroute_dnss	 ivr_dnss;
 	struct event		 ivr_routeev;
 	int			 ivr_iosock;
 	int			 ivr_iosock6;
@@ -111,6 +113,7 @@ vroute_rtmsg_cb(int fd, short events, void *arg)
 {
 	struct iked		*env = (struct iked *) arg;
 	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_dns	*dns;
 	static uint8_t		*buf;
 	struct rt_msghdr	*rtm;
 	ssize_t			 n;
@@ -141,11 +144,12 @@ vroute_rtmsg_cb(int fd, short events, void *arg)
 
 	switch(rtm->rtm_type) {
 	case RTM_PROPOSAL:
-		if (rtm->rtm_priority == RTP_PROPOSAL_SOLICIT &&
-		    ivr->ivr_dns) {
-			log_debug("%s: got solicit", __func__);
-			vroute_dodns(env, (struct sockaddr *)&ivr->ivr_dns->vd_addr, 1,
-			    ivr->ivr_dns->vd_ifidx);
+		if (rtm->rtm_priority == RTP_PROPOSAL_SOLICIT) {
+			TAILQ_FOREACH(dns, &ivr->ivr_dnss, vd_entry) {
+				log_debug("%s: got solicit", __func__);
+				vroute_dodns(env, (struct sockaddr *) &dns->vd_addr,
+				    1, dns->vd_ifidx);
+			}
 		}
 		break;
 	default:
@@ -182,6 +186,7 @@ vroute_init(struct iked *env)
 #endif
 
 	TAILQ_INIT(&ivr->ivr_addrs);
+	TAILQ_INIT(&ivr->ivr_dnss);
 	TAILQ_INIT(&ivr->ivr_routes);
 
 	ivr->ivr_pid = getpid();
@@ -202,6 +207,7 @@ vroute_cleanup(struct iked *env)
 	struct iked_vroute_sc	*ivr = env->sc_vroute;
 	struct vroute_addr	*addr;
 	struct vroute_route	*route;
+	struct vroute_dns	*dns;
 
 	while ((addr = TAILQ_FIRST(&ivr->ivr_addrs))) {
 		if_indextoname(addr->va_ifidx, ifname);
@@ -223,10 +229,11 @@ vroute_cleanup(struct iked *env)
 	}
 
 #ifdef __OpenBSD__
-	if (ivr->ivr_dns) {
-		vroute_dodns(env, (struct sockaddr *)&ivr->ivr_dns->vd_addr, 0,
-		    ivr->ivr_dns->vd_ifidx);
-		free(ivr->ivr_dns);
+	while ((dns = TAILQ_FIRST(&ivr->ivr_dnss))) {
+		vroute_dodns(env, (struct sockaddr *)&dns->vd_addr, 0,
+		    dns->vd_ifidx);
+		TAILQ_REMOVE(&ivr->ivr_dnss, dns, vd_entry);
+		free(dns);
 	}
 #endif
 }
@@ -350,7 +357,6 @@ int
 vroute_getdns(struct iked *env, struct imsg *imsg)
 {
 #ifdef __OpenBSD__
-	struct iked_vroute_sc	*ivr = env->sc_vroute;
 	struct sockaddr		*dns;
 	uint8_t			*ptr;
 	size_t			 left;
@@ -377,12 +383,8 @@ vroute_getdns(struct iked *env, struct imsg *imsg)
 
 	add = (imsg->hdr.type == IMSG_VDNS_ADD);
 	if (add) {
-		if (ivr->ivr_dns != NULL)
-			return (0);
 		vroute_insertdns(env, ifidx, dns);
 	} else {
-		if (ivr->ivr_dns == NULL)
-			return (0);
 		vroute_removedns(env, ifidx, dns);
 	}
 
@@ -451,19 +453,23 @@ vroute_insertdns(struct iked *env, int ifidx, struct sockaddr *addr)
 	memcpy(&dns->vd_addr, addr, addr->sa_len);
 	dns->vd_ifidx = ifidx;
 
-	ivr->ivr_dns = dns;
+	TAILQ_INSERT_TAIL(&ivr->ivr_dnss, dns, vd_entry);
 }
 
 void
 vroute_removedns(struct iked *env, int ifidx, struct sockaddr *addr)
 {
 	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_dns	*dns, *tdns;
 
-	if (ifidx == ivr->ivr_dns->vd_ifidx &&
-	    sockaddr_cmp(addr, (struct sockaddr *)
-	    &ivr->ivr_dns->vd_addr, -1) == 0) {
-		free(ivr->ivr_dns);
-		ivr->ivr_dns = NULL;
+	TAILQ_FOREACH_SAFE(dns, &ivr->ivr_dnss, vd_entry, tdns) {
+		if (ifidx != dns->vd_ifidx)
+			continue;
+		if (sockaddr_cmp(addr, (struct sockaddr *) &dns->vd_addr, -1))
+			continue;
+
+		TAILQ_REMOVE(&ivr->ivr_dnss, dns, vd_entry);
+		free(dns);
 	}
 }
 
