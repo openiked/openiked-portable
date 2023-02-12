@@ -21,6 +21,7 @@ set(VERSIONED_FILES)
 list(APPEND VERSIONED_FILES iked.c)
 
 set(SRCS)
+set(LIBS)
 
 set(CFLAGS)
 list(APPEND CFLAGS
@@ -118,15 +119,25 @@ else()
 	)
 endif()
 
-if(WITH_APPARMOR)
-	target_link_libraries(iked
-		PRIVATE util event crypto ssl compat iked-shared apparmor
-	)
-else()
-	target_link_libraries(iked
-		PRIVATE util event crypto ssl compat iked-shared
-	)
+list(APPEND LIBS
+	util
+	event
+	crypto
+	ssl
+	compat
+	iked-shared
+)
+
+if (WITH_APPARMOR)
+	list(APPEND LIBS apparmor)
 endif()
+if (HAVE_SYSTEMD)
+	list(APPEND LIBS systemd)
+endif()
+
+target_link_libraries(iked
+	PRIVATE ${LIBS}
+)
 
 add_custom_command(
 	OUTPUT parse.c

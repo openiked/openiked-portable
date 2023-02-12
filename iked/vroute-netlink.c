@@ -31,7 +31,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <iked.h>
+#ifdef HAVE_SYSTEMD
+#include "systemd/sd-bus.h"
+#endif
+
+#include "iked.h"
 
 int vroute_setroute(struct iked *, uint32_t, struct sockaddr *, uint8_t,
     struct sockaddr *, int);
@@ -47,6 +51,10 @@ void vroute_insertiface(struct iked *, unsigned int);
 void vroute_removeiface(struct iked *, unsigned int);
 void vroute_insertroute(struct iked *, struct sockaddr *);
 void vroute_removeroute(struct iked *, struct sockaddr *);
+#ifdef HAVE_SYSTEMD
+int vroute_resolved_domain(struct iked *, unsigned int, int);
+int vroute_resolved_dns(struct iked *, unsigned int, struct sockaddr *, int);
+#endif
 
 struct vroute_addr {
 	int				va_ifidx;
@@ -72,10 +80,13 @@ static int	nl_addattr(struct nlmsghdr *, int, void *, size_t);
 static int	nl_dorule(struct iked *, int, uint32_t, int, int);
 
 struct iked_vroute_sc {
-	struct vroute_addrs	ivr_addrs;
-	struct vroute_ifaces	ivr_ifaces;
-	struct vroute_routes	ivr_routes;
-	int			ivr_rtsock;
+	struct vroute_addrs	 ivr_addrs;
+	struct vroute_ifaces	 ivr_ifaces;
+	struct vroute_routes	 ivr_routes;
+	int			 ivr_rtsock;
+#ifdef HAVE_SYSTEMD
+	sd_bus			*ivr_bus;
+#endif
 };
 
 #define NL_BUFLEN	1024
@@ -94,6 +105,15 @@ vroute_init(struct iked *env)
 	if ((ivr->ivr_rtsock = socket(AF_NETLINK, SOCK_DGRAM,
 	    NETLINK_ROUTE)) == -1)
 		fatal("%s: failed to create netlink socket", __func__);
+
+#ifdef HAVE_SYSTEMD
+	int r;
+	r = sd_bus_open_system(&ivr->ivr_bus);
+	if (r < 0) {
+		log_warn("%s: sd_bus_open_system", __func__);
+		ivr->ivr_bus = NULL;
+	}
+#endif
 
 	TAILQ_INIT(&ivr->ivr_addrs);
 	TAILQ_INIT(&ivr->ivr_ifaces);
@@ -720,29 +740,8 @@ vroute_dodns(struct iked *env, struct sockaddr *dns, int add,
 		vroute_removeiface(env, ifindex);
 
 #ifdef HAVE_SYSTEMD
-	char ifname[IF_NAMESIZE];
-
-	if (if_indextoname(ifindex, ifname) == NULL)
-		return (-1);
-
-#define resolvectl(...) do {				\
-		if (fork() == 0) {			\
-			execl("/usr/bin/resolvectl",	\
-			    __VA_ARGS__);		\
-			exit(0);			\
-		}					\
-	} while (0)
-
-	if (add && dns) {
-		resolvectl("/usr/bin/resolvectl", "dns", ifname,
-		    print_host(dns, NULL, 0), (char *) NULL);
-
-		resolvectl("/usr/bin/resolvectl", "domain", ifname,
-		    "~.", (char *) NULL);
-	} else {
-		resolvectl("/usr/bin/resolvectl", "revert", ifname,
-		    (char *) NULL);
-	}
+	vroute_resolved_dns(env, ifindex, dns, add);
+	vroute_resolved_domain(env, ifindex, add);
 #endif
 	return (0);
 }
@@ -798,3 +797,117 @@ nl_addattr(struct nlmsghdr *hdr, int type, void *data, size_t len)
 	hdr->nlmsg_len = NLMSG_ALIGN(hdr->nlmsg_len) + RTA_ALIGN(rta->rta_len);
 	return (0);
 }
+
+#ifdef HAVE_SYSTEMD
+int
+vroute_resolved_domain(struct iked *env, unsigned int ifidx, int add)
+{
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	struct iked_vroute_sc *ivr = env->sc_vroute;
+	sd_bus_message *req = NULL;
+	sd_bus *bus = ivr->ivr_bus;
+	int ret;
+
+	ret = sd_bus_message_new_method_call(bus, &req,
+	    "org.freedesktop.resolve1", "/org/freedesktop/resolve1",
+	    "org.freedesktop.resolve1.Manager", "SetLinkDomains");
+	if (ret < 0)
+		return (-1);
+
+	ret = sd_bus_message_append(req, "i", ifidx);
+	if (ret < 0)
+		return (-1);
+
+	ret = sd_bus_message_open_container(req, 'a', "(sb)");
+	if (ret < 0)
+		return (-1);
+
+	/* Empty list means remove all */
+	if (add) {
+		/* domain ~. */
+		ret = sd_bus_message_append(req, "(sb)", ".", 1);
+		if (ret < 0)
+			return (-1);
+	}
+
+	ret = sd_bus_message_close_container(req);
+	if (ret < 0)
+		return (-1);
+
+	ret = sd_bus_call(bus, req, 0, &error, NULL);
+	if (ret < 0)
+		log_info("%s: sd_bus_call: %s: %s", __func__,
+		    error.name, error.message);
+	sd_bus_error_free(&error);
+	return (ret);
+}
+
+int
+vroute_resolved_dns(struct iked *env, unsigned int ifidx,
+    struct sockaddr *dns, int add)
+{
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	struct sockaddr_in *in;
+	struct sockaddr_in6 *in6;
+	struct iked_vroute_sc *ivr = env->sc_vroute;
+	sd_bus_message *req = NULL;
+	sd_bus *bus = ivr->ivr_bus;
+	int ret;
+
+	ret = sd_bus_message_new_method_call(bus, &req,
+	    "org.freedesktop.resolve1", "/org/freedesktop/resolve1",
+	    "org.freedesktop.resolve1.Manager", "SetLinkDNS");
+	if (ret < 0)
+		return (-1);
+
+	ret = sd_bus_message_append(req, "i", ifidx);
+	if (ret < 0)
+		return (-1);
+
+	ret = sd_bus_message_open_container(req, 'a', "(iay)");
+	if (ret < 0)
+		return (-1);
+
+	/* Empty list means remove all */
+	if (add) {
+		ret = sd_bus_message_open_container(req, 'r', "iay");
+		if (ret < 0)
+			return (-1);
+
+		ret = sd_bus_message_append(req, "i", dns->sa_family);
+		if (ret < 0)
+			return (-1);
+
+		switch (dns->sa_family) {
+		case AF_INET:
+			in = (struct sockaddr_in *)dns;
+			ret = sd_bus_message_append_array(req, 'y',
+			    &in->sin_addr, 4);
+			if (ret < 0)
+				return (-1);
+			break;
+		case AF_INET6:
+			in6 = (struct sockaddr_in6 *)dns;
+			ret = sd_bus_message_append_array(req, 'y',
+			    &in6->sin6_addr, 16);
+			if (ret < 0)
+				return (-1);
+			break;
+		}
+		ret = sd_bus_message_close_container(req);
+		if (ret < 0)
+			return (-1);
+	}
+
+	ret = sd_bus_message_close_container(req);
+	if (ret < 0)
+		return (-1);
+
+	ret = sd_bus_call(bus, req, 0, &error, NULL);
+	if (ret < 0)
+		log_info("%s: sd_bus_call: %s: %s", __func__,
+		    error.name, error.message);
+	sd_bus_error_free(&error);
+	return (ret);
+}
+#endif /* HAVE_SYSTEMD */
