@@ -42,18 +42,18 @@ int vroute_setroute(struct iked *, uint32_t, struct sockaddr *, uint8_t,
 int vroute_doroute(struct iked *, uint8_t, struct sockaddr *,
     struct sockaddr *, struct sockaddr *, int);
 int vroute_doaddr(struct iked *, int, struct sockaddr *, struct sockaddr *, int);
-int vroute_dodns(struct iked *, struct sockaddr *, int, unsigned int);
+int vroute_dodns(struct iked *, int, unsigned int);
 void vroute_cleanup(struct iked *);
 
 void vroute_insertaddr(struct iked *, int, struct sockaddr *, struct sockaddr *);
 void vroute_removeaddr(struct iked *, int, struct sockaddr *, struct sockaddr *);
-void vroute_insertiface(struct iked *, unsigned int);
-void vroute_removeiface(struct iked *, unsigned int);
+void vroute_insertdns(struct iked *, int, struct sockaddr *);
+void vroute_removedns(struct iked *, int, struct sockaddr *);
 void vroute_insertroute(struct iked *, struct sockaddr *);
 void vroute_removeroute(struct iked *, struct sockaddr *);
 #ifdef HAVE_SYSTEMD
-int vroute_resolved_domain(struct iked *, unsigned int, int);
-int vroute_resolved_dns(struct iked *, unsigned int, struct sockaddr *, int);
+int vroute_resolved_domain(struct iked *, int, int);
+int vroute_resolved_dns(struct iked *, int, int);
 #endif
 
 struct vroute_addr {
@@ -70,18 +70,19 @@ struct vroute_route {
 };
 TAILQ_HEAD(vroute_routes, vroute_route);
 
-struct vroute_iface {
-	unsigned int			vi_ifidx;
-	TAILQ_ENTRY(vroute_iface)	vi_entry;
+struct vroute_dns {
+	struct	sockaddr_storage	vd_addr;
+	int				vd_ifidx;
+	TAILQ_ENTRY(vroute_dns)		vd_entry;
 };
-TAILQ_HEAD(vroute_ifaces, vroute_iface);
+TAILQ_HEAD(vroute_dnss, vroute_dns);
 
 static int	nl_addattr(struct nlmsghdr *, int, void *, size_t);
 static int	nl_dorule(struct iked *, int, uint32_t, int, int);
 
 struct iked_vroute_sc {
 	struct vroute_addrs	 ivr_addrs;
-	struct vroute_ifaces	 ivr_ifaces;
+	struct vroute_dnss	 ivr_dnss;
 	struct vroute_routes	 ivr_routes;
 	int			 ivr_rtsock;
 #ifdef HAVE_SYSTEMD
@@ -116,7 +117,7 @@ vroute_init(struct iked *env)
 #endif
 
 	TAILQ_INIT(&ivr->ivr_addrs);
-	TAILQ_INIT(&ivr->ivr_ifaces);
+	TAILQ_INIT(&ivr->ivr_dnss);
 	TAILQ_INIT(&ivr->ivr_routes);
 
 	env->sc_vroute = ivr;
@@ -129,8 +130,8 @@ vroute_cleanup(struct iked *env)
 {
 	struct iked_vroute_sc	*ivr = env->sc_vroute;
 	struct vroute_addr	*addr;
-	struct vroute_iface	*iface;
 	struct vroute_route	*route;
+	struct vroute_dns	*dns;
 
 	while ((addr = TAILQ_FIRST(&ivr->ivr_addrs))) {
 		vroute_doaddr(env, addr->va_ifidx,
@@ -140,17 +141,17 @@ vroute_cleanup(struct iked *env)
 		free(addr);
 	}
 
-	while ((iface = TAILQ_FIRST(&ivr->ivr_ifaces))) {
-		vroute_dodns(env, NULL, 0, iface->vi_ifidx);
-		TAILQ_REMOVE(&ivr->ivr_ifaces, iface, vi_entry);
-		free(iface);
-	}
-
 	while ((route = TAILQ_FIRST(&ivr->ivr_routes))) {
 		vroute_doroute(env, RTM_DELROUTE,
 		    (struct sockaddr *)&route->vr_dest, NULL, NULL, 1);
 		TAILQ_REMOVE(&ivr->ivr_routes, route, vr_entry);
 		free(route);
+	}
+
+	while ((dns = TAILQ_FIRST(&ivr->ivr_dnss))) {
+		vroute_dodns(env, 0, dns->vd_ifidx);
+		TAILQ_REMOVE(&ivr->ivr_dnss, dns, vd_entry);
+		free(dns);
 	}
 }
 
@@ -297,40 +298,13 @@ vroute_getdns(struct iked *env, struct imsg *imsg)
 	left -= sizeof(ifidx);
 
 	add = (imsg->hdr.type == IMSG_VDNS_ADD);
-	return (vroute_dodns(env, dns, add, ifidx));
-}
-
-void
-vroute_insertiface(struct iked *env, unsigned int ifidx)
-{
-	struct iked_vroute_sc	*ivr = env->sc_vroute;
-	struct vroute_iface	*iface;
-
-	/* Prevent duplicates */
-	TAILQ_FOREACH(iface, &ivr->ivr_ifaces, vi_entry) {
-		if (iface->vi_ifidx == ifidx)
-			return;
+	if (add) {
+		vroute_insertdns(env, ifidx, dns);
+	} else {
+		vroute_removedns(env, ifidx, dns);
 	}
 
-	iface = calloc(1, sizeof(*iface));
-	if (iface == NULL)
-		fatalx("%s: calloc.", __func__);
-
-	iface->vi_ifidx = ifidx;
-	TAILQ_INSERT_TAIL(&ivr->ivr_ifaces, iface, vi_entry);
-}
-
-void
-vroute_removeiface(struct iked *env, unsigned int ifidx)
-{
-	struct iked_vroute_sc	*ivr = env->sc_vroute;
-	struct vroute_iface	*iface;
-
-	TAILQ_FOREACH(iface, &ivr->ivr_ifaces, vi_entry) {
-		if (iface->vi_ifidx == ifidx)
-			continue;
-		TAILQ_REMOVE(&ivr->ivr_ifaces, iface, vi_entry);
-	}
+	return (vroute_dodns(env, add, ifidx));
 }
 
 void
@@ -358,6 +332,39 @@ vroute_removeroute(struct iked *env, struct sockaddr *dest)
 		if (sockaddr_cmp(dest, (struct sockaddr *)&route->vr_dest, -1))
 			continue;
 		TAILQ_REMOVE(&ivr->ivr_routes, route, vr_entry);
+	}
+}
+
+void
+vroute_insertdns(struct iked *env, int ifidx, struct sockaddr *addr)
+{
+	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_dns	*dns;
+
+	dns = calloc(1, sizeof(*dns));
+	if (dns == NULL)
+		fatalx("%s: calloc.", __func__);
+
+	memcpy(&dns->vd_addr, addr, SA_LEN(addr));
+	dns->vd_ifidx = ifidx;
+
+	TAILQ_INSERT_TAIL(&ivr->ivr_dnss, dns, vd_entry);
+}
+
+void
+vroute_removedns(struct iked *env, int ifidx, struct sockaddr *addr)
+{
+	struct iked_vroute_sc	*ivr = env->sc_vroute;
+	struct vroute_dns	*dns, *tdns;
+
+	TAILQ_FOREACH_SAFE(dns, &ivr->ivr_dnss, vd_entry, tdns) {
+		if (ifidx != dns->vd_ifidx)
+			continue;
+		if (sockaddr_cmp(addr, (struct sockaddr *) &dns->vd_addr, -1))
+			continue;
+
+		TAILQ_REMOVE(&ivr->ivr_dnss, dns, vd_entry);
+		free(dns);
 	}
 }
 
@@ -731,16 +738,10 @@ vroute_doaddr(struct iked *env, int ifidx, struct sockaddr *addr,
 }
 
 int
-vroute_dodns(struct iked *env, struct sockaddr *dns, int add,
-    unsigned int ifindex)
+vroute_dodns(struct iked *env, int add, unsigned int ifindex)
 {
-	if (add)
-		vroute_insertiface(env, ifindex);
-	else
-		vroute_removeiface(env, ifindex);
-
 #ifdef HAVE_SYSTEMD
-	vroute_resolved_dns(env, ifindex, dns, add);
+	vroute_resolved_dns(env, ifindex, add);
 	vroute_resolved_domain(env, ifindex, add);
 #endif
 	return (0);
@@ -800,7 +801,7 @@ nl_addattr(struct nlmsghdr *hdr, int type, void *data, size_t len)
 
 #ifdef HAVE_SYSTEMD
 int
-vroute_resolved_domain(struct iked *env, unsigned int ifidx, int add)
+vroute_resolved_domain(struct iked *env, int ifidx, int add)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	struct iked_vroute_sc *ivr = env->sc_vroute;
@@ -843,13 +844,14 @@ vroute_resolved_domain(struct iked *env, unsigned int ifidx, int add)
 }
 
 int
-vroute_resolved_dns(struct iked *env, unsigned int ifidx,
-    struct sockaddr *dns, int add)
+vroute_resolved_dns(struct iked *env, int ifidx, int add)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
+	struct sockaddr *dns;
 	struct sockaddr_in *in;
 	struct sockaddr_in6 *in6;
 	struct iked_vroute_sc *ivr = env->sc_vroute;
+	struct vroute_dns *vdns;
 	sd_bus_message *req = NULL;
 	sd_bus *bus = ivr->ivr_bus;
 	int ret;
@@ -870,33 +872,39 @@ vroute_resolved_dns(struct iked *env, unsigned int ifidx,
 
 	/* Empty list means remove all */
 	if (add) {
-		ret = sd_bus_message_open_container(req, 'r', "iay");
-		if (ret < 0)
-			return (-1);
+		TAILQ_FOREACH(vdns, &ivr->ivr_dnss, vd_entry) {
+			if (vdns->vd_ifidx != ifidx)
+				continue;
 
-		ret = sd_bus_message_append(req, "i", dns->sa_family);
-		if (ret < 0)
-			return (-1);
-
-		switch (dns->sa_family) {
-		case AF_INET:
-			in = (struct sockaddr_in *)dns;
-			ret = sd_bus_message_append_array(req, 'y',
-			    &in->sin_addr, 4);
+			ret = sd_bus_message_open_container(req, 'r', "iay");
 			if (ret < 0)
 				return (-1);
-			break;
-		case AF_INET6:
-			in6 = (struct sockaddr_in6 *)dns;
-			ret = sd_bus_message_append_array(req, 'y',
-			    &in6->sin6_addr, 16);
+
+			dns = (struct sockaddr *)&vdns->vd_addr;
+			ret = sd_bus_message_append(req, "i", dns->sa_family);
 			if (ret < 0)
 				return (-1);
-			break;
+
+			switch (dns->sa_family) {
+			case AF_INET:
+				in = (struct sockaddr_in *)dns;
+				ret = sd_bus_message_append_array(req, 'y',
+				    &in->sin_addr, 4);
+				if (ret < 0)
+					return (-1);
+				break;
+			case AF_INET6:
+				in6 = (struct sockaddr_in6 *)dns;
+				ret = sd_bus_message_append_array(req, 'y',
+				    &in6->sin6_addr, 16);
+				if (ret < 0)
+					return (-1);
+				break;
+			}
+			ret = sd_bus_message_close_container(req);
+			if (ret < 0)
+				return (-1);
 		}
-		ret = sd_bus_message_close_container(req);
-		if (ret < 0)
-			return (-1);
 	}
 
 	ret = sd_bus_message_close_container(req);
