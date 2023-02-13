@@ -52,7 +52,7 @@ void vroute_removedns(struct iked *, int, struct sockaddr *);
 void vroute_insertroute(struct iked *, struct sockaddr *);
 void vroute_removeroute(struct iked *, struct sockaddr *);
 #ifdef HAVE_SYSTEMD
-int vroute_resolved_domain(struct iked *, int, int);
+int vroute_resolved_default_route(struct iked *, int, int);
 int vroute_resolved_dns(struct iked *, int, int);
 #endif
 
@@ -742,7 +742,7 @@ vroute_dodns(struct iked *env, int add, unsigned int ifindex)
 {
 #ifdef HAVE_SYSTEMD
 	vroute_resolved_dns(env, ifindex, add);
-	vroute_resolved_domain(env, ifindex, add);
+	vroute_resolved_default_route(env, ifindex, add);
 #endif
 	return (0);
 }
@@ -801,7 +801,7 @@ nl_addattr(struct nlmsghdr *hdr, int type, void *data, size_t len)
 
 #ifdef HAVE_SYSTEMD
 int
-vroute_resolved_domain(struct iked *env, int ifidx, int add)
+vroute_resolved_default_route(struct iked *env, int ifidx, int add)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	struct iked_vroute_sc *ivr = env->sc_vroute;
@@ -811,7 +811,7 @@ vroute_resolved_domain(struct iked *env, int ifidx, int add)
 
 	ret = sd_bus_message_new_method_call(bus, &req,
 	    "org.freedesktop.resolve1", "/org/freedesktop/resolve1",
-	    "org.freedesktop.resolve1.Manager", "SetLinkDomains");
+	    "org.freedesktop.resolve1.Manager", "SetLinkDefaultRoute");
 	if (ret < 0)
 		return (-1);
 
@@ -819,19 +819,7 @@ vroute_resolved_domain(struct iked *env, int ifidx, int add)
 	if (ret < 0)
 		return (-1);
 
-	ret = sd_bus_message_open_container(req, 'a', "(sb)");
-	if (ret < 0)
-		return (-1);
-
-	/* Empty list means remove all */
-	if (add) {
-		/* domain ~. */
-		ret = sd_bus_message_append(req, "(sb)", ".", 1);
-		if (ret < 0)
-			return (-1);
-	}
-
-	ret = sd_bus_message_close_container(req);
+	ret = sd_bus_message_append(req, "a", add);
 	if (ret < 0)
 		return (-1);
 
@@ -839,6 +827,7 @@ vroute_resolved_domain(struct iked *env, int ifidx, int add)
 	if (ret < 0)
 		log_info("%s: sd_bus_call: %s: %s", __func__,
 		    error.name, error.message);
+
 	sd_bus_error_free(&error);
 	return (ret);
 }
