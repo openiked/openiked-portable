@@ -52,8 +52,10 @@ void vroute_removedns(struct iked *, int, struct sockaddr *);
 void vroute_insertroute(struct iked *, struct sockaddr *);
 void vroute_removeroute(struct iked *, struct sockaddr *);
 #ifdef HAVE_SYSTEMD
-int vroute_resolved_default_route(struct iked *, int, int);
-int vroute_resolved_dns(struct iked *, int, int);
+int vroute_dbus_default_route(struct iked *, int, sd_bus_error *, int,
+    const char *, const char *, const char *);
+int vroute_dbus_dns(struct iked *, int, sd_bus_error *, int, const char *,
+    const char *, const char *);
 #endif
 
 struct vroute_addr {
@@ -741,8 +743,41 @@ int
 vroute_dodns(struct iked *env, int add, unsigned int ifindex)
 {
 #ifdef HAVE_SYSTEMD
-	vroute_resolved_dns(env, ifindex, add);
-	vroute_resolved_default_route(env, ifindex, add);
+	const char *destination = "org.freedesktop.resolve1";
+	const char *path = "/org/freedesktop/resolve1";
+	const char *interface = "org.freedesktop.resolve1.Manager";
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	int ret;
+
+	ret = vroute_dbus_dns(env, ifindex, &error, add,
+	    destination, path, interface);
+	if (ret < 0 && sd_bus_error_has_name(&error,
+	    "org.freedesktop.resolve1.LinkBusy")) {
+
+		/*
+                 * Interface is managed by networkd, so we need to send
+                 * our messages there instead.
+                 */
+		destination = "org.freedesktop.network1";
+		path = "/org/freedesktop/network1";
+		interface = "org.freedesktop.network1.Manager";
+
+		sd_bus_error_free(&error);
+		ret = vroute_dbus_dns(env, ifindex, &error, add,
+		    destination, path, interface);
+	}
+	if (ret < 0) {
+		log_info("%s: vroute_dbus_dns: %s: %s", __func__,
+		    error.name, error.message);
+		sd_bus_error_free(&error);
+	}
+	ret = vroute_dbus_default_route(env, ifindex, &error, add,
+	    destination, path, interface);
+	if (ret < 0) {
+		log_info("%s: vroute_dbus_default_route: %s: %s", __func__,
+		    error.name, error.message);
+		sd_bus_error_free(&error);
+	}
 #endif
 	return (0);
 }
@@ -801,41 +836,22 @@ nl_addattr(struct nlmsghdr *hdr, int type, void *data, size_t len)
 
 #ifdef HAVE_SYSTEMD
 int
-vroute_resolved_default_route(struct iked *env, int ifidx, int add)
+vroute_dbus_default_route(struct iked *env, int ifidx, sd_bus_error *error, int add,
+    const char *destination, const char *path, const char *interface)
 {
-	sd_bus_error error = SD_BUS_ERROR_NULL;
 	struct iked_vroute_sc *ivr = env->sc_vroute;
-	sd_bus_message *req = NULL;
 	sd_bus *bus = ivr->ivr_bus;
 	int ret;
 
-	ret = sd_bus_message_new_method_call(bus, &req,
-	    "org.freedesktop.resolve1", "/org/freedesktop/resolve1",
-	    "org.freedesktop.resolve1.Manager", "SetLinkDefaultRoute");
-	if (ret < 0)
-		return (-1);
-
-	ret = sd_bus_message_append(req, "i", ifidx);
-	if (ret < 0)
-		return (-1);
-
-	ret = sd_bus_message_append(req, "a", add);
-	if (ret < 0)
-		return (-1);
-
-	ret = sd_bus_call(bus, req, 0, &error, NULL);
-	if (ret < 0)
-		log_info("%s: sd_bus_call: %s: %s", __func__,
-		    error.name, error.message);
-
-	sd_bus_error_free(&error);
+	ret = sd_bus_call_method(bus, destination, path, interface,
+	    "SetLinkDefaultRoute", error, NULL, "ib", ifidx, add);
 	return (ret);
 }
 
 int
-vroute_resolved_dns(struct iked *env, int ifidx, int add)
+vroute_dbus_dns(struct iked *env, int ifidx, sd_bus_error *error, int add,
+    const char *destination, const char *path, const char *interface)
 {
-	sd_bus_error error = SD_BUS_ERROR_NULL;
 	struct sockaddr *dns;
 	struct sockaddr_in *in;
 	struct sockaddr_in6 *in6;
@@ -846,8 +862,7 @@ vroute_resolved_dns(struct iked *env, int ifidx, int add)
 	int ret;
 
 	ret = sd_bus_message_new_method_call(bus, &req,
-	    "org.freedesktop.resolve1", "/org/freedesktop/resolve1",
-	    "org.freedesktop.resolve1.Manager", "SetLinkDNS");
+	    destination, path, interface, "SetLinkDNS");
 	if (ret < 0)
 		return (-1);
 
@@ -900,11 +915,7 @@ vroute_resolved_dns(struct iked *env, int ifidx, int add)
 	if (ret < 0)
 		return (-1);
 
-	ret = sd_bus_call(bus, req, 0, &error, NULL);
-	if (ret < 0)
-		log_info("%s: sd_bus_call: %s: %s", __func__,
-		    error.name, error.message);
-	sd_bus_error_free(&error);
+	ret = sd_bus_call(bus, req, 0, error, NULL);
 	return (ret);
 }
 #endif /* HAVE_SYSTEMD */
