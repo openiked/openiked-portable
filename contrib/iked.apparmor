@@ -24,6 +24,12 @@ profile iked /usr/sbin/iked {
      interface=org.freedesktop.resolve1.Manager
      member=SetLinkDNS
      peer=(name=(org.freedesktop.resolve1)),
+  dbus send
+     bus=system
+     path=/org/freedesktop/network1
+     interface=org.freedesktop.network1.Manager
+     member=SetLinkDNS
+     peer=(name=(org.freedesktop.network1)),
 
   # switch profile
   owner @{PROC}/@{tid}/mounts r,
