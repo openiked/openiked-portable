@@ -33,6 +33,10 @@
 
 #include "iked.h"
 
+#ifdef WITH_APPARMOR
+#include "apparmor.h"
+#endif
+
 #define	CONTROL_BACKLOG	5
 
 struct ctl_connlist ctl_conns = TAILQ_HEAD_INITIALIZER(ctl_conns);
@@ -71,6 +75,12 @@ control_run(struct privsep *ps, struct privsep_proc *p, void *arg)
 	 */
 	if (pledge("stdio unix recvfd", NULL) == -1)
 		fatal("pledge");
+
+#ifdef WITH_APPARMOR
+	if (armor_change_profile(ps->ps_env->sc_apparmor, "iked//control") == -1)
+		log_warnx("warning: armor_change_profile "
+		    "(\"iked//control\") failed");
+#endif
 }
 
 int

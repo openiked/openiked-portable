@@ -73,6 +73,9 @@ endif()
 if(HAVE_VROUTE_NETLINK)
 	list(APPEND SRCS vroute-netlink.c)
 endif()
+if (WITH_APPARMOR)
+	list(APPEND SRCS apparmor.c)
+endif()
 
 list(APPEND SRCS
 	ca.c
@@ -128,9 +131,6 @@ list(APPEND LIBS
 	iked-shared
 )
 
-if (WITH_APPARMOR)
-	list(APPEND LIBS apparmor)
-endif()
 if (HAVE_SYSTEMD)
 	list(APPEND LIBS systemd)
 endif()

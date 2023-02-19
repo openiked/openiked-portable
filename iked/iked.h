@@ -840,6 +840,9 @@ struct iked {
 	struct iked_addrpool6		 sc_addrpool6;
 
 	int				 sc_cert_partial_chain;
+#ifdef WITH_APPARMOR
+	int				 sc_apparmor;
+#endif
 };
 
 struct iked_socket {

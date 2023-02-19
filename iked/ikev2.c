@@ -50,6 +50,10 @@
 #include "chap_ms.h"
 #include "version.h"
 
+#ifdef WITH_APPARMOR
+#include "apparmor.h"
+#endif
+
 void	 ikev2_info(struct iked *, int);
 void	 ikev2_info_sa(struct iked *, int, const char *, struct iked_sa *);
 void	 ikev2_info_csa(struct iked *, int, const char *, struct iked_childsa *);
@@ -217,6 +221,12 @@ ikev2_run(struct privsep *ps, struct privsep_proc *p, void *arg)
 	p->p_shutdown = ikev2_shutdown;
 	if (pledge("stdio inet recvfd", NULL) == -1)
 		fatal("pledge");
+
+#ifdef WITH_APPARMOR
+	if (armor_change_profile(ps->ps_env->sc_apparmor, "iked//ikev2") == -1)
+		log_warnx("warning: armor_change_profile "
+		    "(\"iked//ikev2\") failed");
+#endif
 }
 
 void

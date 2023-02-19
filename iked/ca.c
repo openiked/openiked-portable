@@ -51,6 +51,10 @@
 #include "iked.h"
 #include "ikev2.h"
 
+#ifdef WITH_APPARMOR
+#include "apparmor.h"
+#endif
+
 void	 ca_run(struct privsep *, struct privsep_proc *, void *);
 void	 ca_shutdown(void);
 void	 ca_reset(struct privsep *);
@@ -124,6 +128,12 @@ ca_run(struct privsep *ps, struct privsep_proc *p, void *arg)
 	 */
 	if (pledge("stdio rpath recvfd", NULL) == -1)
 		fatal("pledge");
+
+#ifdef WITH_APPARMOR
+	if (armor_change_profile(ps->ps_env->sc_apparmor, "iked//ca") == -1)
+		log_warnx("warning: armor_change_profile "
+		    "(\"iked//ca\") failed");
+#endif
 
 	if ((store = calloc(1, sizeof(*store))) == NULL)
 		fatal("%s: failed to allocate cert store", __func__);

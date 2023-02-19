@@ -42,6 +42,10 @@
 #include "ikev2.h"
 #include "version.h"
 
+#ifdef WITH_APPARMOR
+#include "apparmor.h"
+#endif
+
 __dead void usage(void);
 
 /* Saves a copy of argv for setproctitle emulation */
@@ -191,6 +195,7 @@ main(int argc, char *argv[])
 	env->sc_opts = opts;
 	env->sc_nattmode = natt_mode;
 	env->sc_nattport = port;
+	env->sc_apparmor = armor_proc_open();
 
 	ps = &env->sc_ps;
 	ps->ps_env = env;
