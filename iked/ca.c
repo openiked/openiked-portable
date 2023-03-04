@@ -1,4 +1,4 @@
-/*	$OpenBSD: ca.c,v 1.89 2022/11/07 22:39:52 tobhe Exp $	*/
+/*	$OpenBSD: ca.c,v 1.90 2023/03/04 22:22:50 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -104,10 +104,10 @@ struct ca_store {
 	uint8_t		 ca_privkey_method;
 };
 
-pid_t
+void
 caproc(struct privsep *ps, struct privsep_proc *p)
 {
-	return (proc_run(ps, p, procs, nitems(procs), ca_run, NULL));
+	proc_run(ps, p, procs, nitems(procs), ca_run, NULL);
 }
 
 void
@@ -135,9 +135,13 @@ ca_run(struct privsep *ps, struct privsep_proc *p, void *arg)
 void
 ca_shutdown(struct privsep_proc *p)
 {
-	struct iked		*env = p->p_env;
+	struct iked		*env;
 	struct ca_store		*store;
 
+	if (p->p_ps == NULL)
+		return;
+
+	env = p->p_ps->ps_env;
 	if (env == NULL)
 		return;
 	ibuf_release(env->sc_certreq);
@@ -215,7 +219,7 @@ ca_reset(struct privsep *ps)
 int
 ca_dispatch_parent(int fd, struct privsep_proc *p, struct imsg *imsg)
 {
-	struct iked		*env = p->p_env;
+	struct iked		*env = p->p_ps->ps_env;
 	unsigned int		 mode;
 
 	switch (imsg->hdr.type) {
@@ -250,7 +254,7 @@ ca_dispatch_parent(int fd, struct privsep_proc *p, struct imsg *imsg)
 int
 ca_dispatch_ikev2(int fd, struct privsep_proc *p, struct imsg *imsg)
 {
-	struct iked	*env = p->p_env;
+	struct iked	*env = p->p_ps->ps_env;
 
 	switch (imsg->hdr.type) {
 	case IMSG_CERTREQ:
@@ -272,7 +276,7 @@ ca_dispatch_ikev2(int fd, struct privsep_proc *p, struct imsg *imsg)
 int
 ca_dispatch_control(int fd, struct privsep_proc *p, struct imsg *imsg)
 {
-	struct iked	*env = p->p_env;
+	struct iked	*env = p->p_ps->ps_env;
 	struct ca_store	*store = env->sc_priv;
 
 	switch (imsg->hdr.type) {
