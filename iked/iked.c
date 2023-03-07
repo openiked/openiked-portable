@@ -195,7 +195,9 @@ main(int argc, char *argv[])
 	env->sc_opts = opts;
 	env->sc_nattmode = natt_mode;
 	env->sc_nattport = port;
+#ifdef WITH_APPARMOR
 	env->sc_apparmor = armor_proc_open();
+#endif
 
 	ps = &env->sc_ps;
 	ps->ps_env = env;
