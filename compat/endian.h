@@ -44,8 +44,7 @@
 #endif
 #endif /* __linux__ */
 
-#if defined(__FreeBSD__) && !defined(HAVE_ENDIAN_H)
-#include <sys/endian.h>
+#if defined(__FreeBSD__)
 #if !defined(betoh16)
 #define betoh16	be16toh
 #endif
