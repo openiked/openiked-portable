@@ -37,12 +37,19 @@ It requires a working C compiler, standard library and headers,  a
 ``yacc`` compatible parser generator, ``libevent``, and ``libcrypto`` from either
 [LibreSSL](https://www.libressl.org/) or [OpenSSL](https://www.openssl.org).
 
-### Building from source
-
 ```
 git clone https://github.com/openiked/openiked-portable.git
 cd openiked-portable
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make
+# install
+make install
+```
+A few additional setup steps are required to create the intial configuration files, key material and system users.
+The easiest way to do this is running the setup scripts included in the source repository.
+
+```
+./setup_config.sh
+./useradd.sh
 ```
