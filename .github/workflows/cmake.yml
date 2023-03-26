@@ -19,7 +19,7 @@ jobs:
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     strategy:
       matrix:
-        os: [ ubuntu-latest, ubuntu-18.04 ]
+        os: [ ubuntu-latest, ubuntu-22.04 ]
     runs-on: ${{ matrix.os }}
     # env:
     #   CFLAGS: -Werror
