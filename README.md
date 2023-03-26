@@ -2,7 +2,6 @@
 
 [![License](https://img.shields.io/github/license/openiked/openiked-portable)](https://github.com/openiked/openiked-portable/blob/master/LICENSE)
 [![CMake](https://github.com/openiked/openiked-portable/workflows/CMake/badge.svg)](https://github.com/openiked/openiked-portable/actions?query=workflow%3ACMake)
-[![builds.sr.ht status](https://builds.sr.ht/~mbuhl/openiked-portable.svg)](https://builds.sr.ht/~mbuhl/openiked-portable?)
 [![#openiked on matrix.org](https://img.shields.io/badge/matrix-%23openiked-blue)](https://app.element.io/#/room/#openiked:matrix.org)
 [![#openiked on libera.chat](https://img.shields.io/badge/IRC-%23openiked-blue)](https://kiwiirc.com/nextclient/irc.libera.chat/#openiked)
 
