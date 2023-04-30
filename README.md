@@ -28,7 +28,7 @@ Binary packages for OpenIKED are available for the native package managers of va
 * [Fedora](https://packages.fedoraproject.org/pkgs/openiked/openiked/index.html)
 * [Ubuntu](https://launchpad.net/ubuntu/+source/openiked)
 * [Arch Linux User Repository (AUR)](https://aur.archlinux.org/packages/openiked)
-* [OpenSUSE](https://build.opensuse.org/package/show/home:Alexander_Naumov/openiked)
+* [openSUSE](https://build.opensuse.org/package/show/home:Alexander_Naumov:openiked/openiked-portable)
 
 ### Building from source
 
