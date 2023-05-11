@@ -43,6 +43,14 @@ profile iked /usr/sbin/iked {
      member=SetLinkDefaultRoute
      peer=(name=(org.freedesktop.network1)),
 
+  # reexec
+  /usr/sbin/iked ix,
+
+  # priv dropping
+  capability setuid,
+  capability setgid,
+  capability sys_chroot,
+
   # switch profile
   owner @{PROC}/@{tid}/mounts r,
   owner @{PROC}/@{tid}/attr/current w,
@@ -62,9 +70,6 @@ profile iked /usr/sbin/iked {
     include <abstractions/base>
 
     # privsep
-    capability setuid,
-    capability setgid,
-    capability sys_chroot,
     signal (receive) peer=iked,
 
     # certs/keys
@@ -75,9 +80,6 @@ profile iked /usr/sbin/iked {
     include <abstractions/base>
 
     # privsep
-    capability setuid,
-    capability setgid,
-    capability sys_chroot,
     signal (receive) peer=iked,
 
     # ikectl control sock
@@ -88,9 +90,6 @@ profile iked /usr/sbin/iked {
     include <abstractions/base>
 
     # privsep
-    capability setuid,
-    capability setgid,
-    capability sys_chroot,
     signal (receive) peer=iked,
 
     # IKEv2
