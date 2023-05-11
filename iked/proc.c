@@ -22,10 +22,6 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 
-#ifdef WITH_APPARMOR
-#include <sys/apparmor.h>
-#endif
-
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
