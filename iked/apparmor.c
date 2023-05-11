@@ -44,21 +44,21 @@ armor_proc_open(void)
 int
 armor_change_profile(int fd, const char *profile)
 {
-	char *cmd;
-	int ret, len;
+	char *cmd = NULL;
+	int len;
+	int ret = -1;
 
 	len = asprintf(&cmd, "changeprofile %s", profile);
 	if (len < 0)
-		return (-1);
+		goto done;
 
 	ret = write(fd, cmd, len);
+	if (ret == -1)
+		goto done;
+
+	ret = 0;
+ done:
 	free(cmd);
-
+	close(fd);
 	return (ret);
-}
-
-int
-armor_close(int fd)
-{
-	return close(fd);
 }

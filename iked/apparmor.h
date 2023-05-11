@@ -20,6 +20,5 @@
 /* apparmor.c */
 int armor_proc_open(void);
 int armor_change_profile(int, const char *);
-int armor_close(int);
 
 #endif /* IKED_APPARMOR_H */
