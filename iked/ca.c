@@ -1,4 +1,4 @@
-/*	$OpenBSD: ca.c,v 1.91 2023/03/05 22:17:22 tobhe Exp $	*/
+/*	$OpenBSD: ca.c,v 1.92 2023/05/23 13:12:19 claudio Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -148,13 +148,13 @@ ca_shutdown(void)
 	struct iked		*env = iked_env;
 	struct ca_store		*store;
 
-	ibuf_release(env->sc_certreq);
+	ibuf_free(env->sc_certreq);
 	if ((store = env->sc_priv) == NULL)
 		return;
 	X509_STORE_free(store->ca_cas);
 	X509_STORE_free(store->ca_certs);
-	ibuf_release(store->ca_pubkey.id_buf);
-	ibuf_release(store->ca_privkey.id_buf);
+	ibuf_free(store->ca_pubkey.id_buf);
+	ibuf_free(store->ca_privkey.id_buf);
 	free(store);
 }
 
@@ -187,7 +187,7 @@ ca_getkey(struct privsep *ps, struct iked_id *key, enum imsg_type type)
 	    ibuf_length(key->id_buf));
 
 	/* clear old key and copy new one */
-	ibuf_release(id->id_buf);
+	ibuf_free(id->id_buf);
 	memcpy(id, key, sizeof(*id));
 }
 
@@ -364,7 +364,7 @@ ca_setscert(struct iked *env, struct iked_sahdr *sh, uint8_t type, X509 *cert)
 	iovcnt++;
 
 	ret = proc_composev(&env->sc_ps, PROC_IKEV2, IMSG_SCERT, iov, iovcnt);
-	ibuf_release(buf);
+	ibuf_free(buf);
 	return (ret);
 }
 
@@ -417,7 +417,7 @@ ca_setreq(struct iked *env, struct iked_sa *sa,
 
 	ret = 0;
  done:
-	ibuf_release(id.id_buf);
+	ibuf_free(id.id_buf);
 	return (ret);
 }
 
@@ -773,7 +773,7 @@ ca_getreq(struct iked *env, struct imsg *imsg)
 
 	ca_setcert(env, &sh, NULL, type,
 	    ibuf_data(buf), ibuf_size(buf), PROC_IKEV2);
-	ibuf_release(buf);
+	ibuf_free(buf);
 
 	return (0);
 }
@@ -832,9 +832,9 @@ ca_getauth(struct iked *env, struct imsg *imsg)
 
 	ret = ca_setauth(env, &sa, sa.sa_localauth.id_buf, PROC_IKEV2);
 
-	ibuf_release(sa.sa_localauth.id_buf);
+	ibuf_free(sa.sa_localauth.id_buf);
 	sa.sa_localauth.id_buf = NULL;
-	ibuf_release(authmsg);
+	ibuf_free(authmsg);
 
 	return (ret);
 }
@@ -915,7 +915,7 @@ ca_reload(struct iked *env)
 	/*
 	 * Save CAs signatures for the IKEv2 CERTREQ
 	 */
-	ibuf_release(env->sc_certreq);
+	ibuf_free(env->sc_certreq);
 	if ((env->sc_certreq = ibuf_new(NULL, 0)) == NULL)
 		return (-1);
 
@@ -938,7 +938,7 @@ ca_reload(struct iked *env)
 		OPENSSL_free(subj_name);
 
 		if (ibuf_add(env->sc_certreq, md, len) != 0) {
-			ibuf_release(env->sc_certreq);
+			ibuf_free(env->sc_certreq);
 			env->sc_certreq = NULL;
 			return (-1);
 		}
@@ -1283,7 +1283,7 @@ ca_pubkey_serialize(EVP_PKEY *key, struct iked_id *id)
 	case EVP_PKEY_RSA:
 		id->id_type = 0;
 		id->id_offset = 0;
-		ibuf_release(id->id_buf);
+		ibuf_free(id->id_buf);
 		id->id_buf = NULL;
 
 		if ((rsa = EVP_PKEY_get0_RSA(key)) == NULL)
@@ -1295,7 +1295,7 @@ ca_pubkey_serialize(EVP_PKEY *key, struct iked_id *id)
 
 		d = ibuf_data(id->id_buf);
 		if (i2d_RSAPublicKey(rsa, &d) != len) {
-			ibuf_release(id->id_buf);
+			ibuf_free(id->id_buf);
 			id->id_buf = NULL;
 			goto done;
 		}
@@ -1305,7 +1305,7 @@ ca_pubkey_serialize(EVP_PKEY *key, struct iked_id *id)
 	case EVP_PKEY_EC:
 		id->id_type = 0;
 		id->id_offset = 0;
-		ibuf_release(id->id_buf);
+		ibuf_free(id->id_buf);
 		id->id_buf = NULL;
 
 		if ((ec = EVP_PKEY_get0_EC_KEY(key)) == NULL)
@@ -1317,7 +1317,7 @@ ca_pubkey_serialize(EVP_PKEY *key, struct iked_id *id)
 
 		d = ibuf_data(id->id_buf);
 		if (i2d_EC_PUBKEY(ec, &d) != len) {
-			ibuf_release(id->id_buf);
+			ibuf_free(id->id_buf);
 			id->id_buf = NULL;
 			goto done;
 		}
@@ -1352,7 +1352,7 @@ ca_privkey_serialize(EVP_PKEY *key, struct iked_id *id)
 	case EVP_PKEY_RSA:
 		id->id_type = 0;
 		id->id_offset = 0;
-		ibuf_release(id->id_buf);
+		ibuf_free(id->id_buf);
 		id->id_buf = NULL;
 
 		if ((rsa = EVP_PKEY_get0_RSA(key)) == NULL)
@@ -1364,7 +1364,7 @@ ca_privkey_serialize(EVP_PKEY *key, struct iked_id *id)
 
 		d = ibuf_data(id->id_buf);
 		if (i2d_RSAPrivateKey(rsa, &d) != len) {
-			ibuf_release(id->id_buf);
+			ibuf_free(id->id_buf);
 			id->id_buf = NULL;
 			goto done;
 		}
@@ -1374,7 +1374,7 @@ ca_privkey_serialize(EVP_PKEY *key, struct iked_id *id)
 	case EVP_PKEY_EC:
 		id->id_type = 0;
 		id->id_offset = 0;
-		ibuf_release(id->id_buf);
+		ibuf_free(id->id_buf);
 		id->id_buf = NULL;
 
 		if ((ec = EVP_PKEY_get0_EC_KEY(key)) == NULL)
@@ -1386,7 +1386,7 @@ ca_privkey_serialize(EVP_PKEY *key, struct iked_id *id)
 
 		d = ibuf_data(id->id_buf);
 		if (i2d_ECPrivateKey(ec, &d) != len) {
-			ibuf_release(id->id_buf);
+			ibuf_free(id->id_buf);
 			id->id_buf = NULL;
 			goto done;
 		}
@@ -1696,7 +1696,7 @@ ca_validate_pubkey(struct iked *env, struct iked_static_id *id,
 	if (ret != 0)
 		ca_sslerror(__func__);
  done:
-	ibuf_release(idp.id_buf);
+	ibuf_free(idp.id_buf);
 	EVP_PKEY_free(localkey);
 	RSA_free(localrsa);
 	if (len > 0)
@@ -1917,7 +1917,7 @@ ca_x509_subjectaltname_do(X509 *cert, int mode, const char *logmsg,
 				}
 				ikev2_print_id(&sanid, idstr, sizeof(idstr));
 				log_info("%s: altname: %s", logmsg, idstr);
-				ibuf_release(sanid.id_buf);
+				ibuf_free(sanid.id_buf);
 				sanid.id_buf = NULL;
 			}
 			/* Compare length and data */
@@ -1932,7 +1932,7 @@ ca_x509_subjectaltname_do(X509 *cert, int mode, const char *logmsg,
 			}
 			/* Get first ID */
 			if (mode == MODE_ALT_GET) {
-				ibuf_release(retid->id_buf);
+				ibuf_free(retid->id_buf);
 				if ((retid->id_buf = ibuf_new(data, len)) == NULL) {
 					log_debug("%s: failed to get id buffer",
 					    __func__);
