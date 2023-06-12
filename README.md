@@ -22,13 +22,15 @@ and the [OpenBSD VPN FAQ](https://www.openbsd.org/faq/faq17.html).
 
 ### Binary Packages
 
-Binary packages for OpenIKED are available for the native package managers of various operating systems and Linux distributions:
+Binary packages for OpenIKED are available for the package managers of various operating systems and Linux distributions:
 * [FreeBSD](https://www.freshports.org/security/openiked/)
 * [Debian](https://tracker.debian.org/pkg/openiked)
 * [Fedora](https://packages.fedoraproject.org/pkgs/openiked/openiked/index.html)
 * [Ubuntu](https://launchpad.net/ubuntu/+source/openiked)
 * [Arch Linux User Repository (AUR)](https://aur.archlinux.org/packages/openiked)
 * [openSUSE](https://build.opensuse.org/package/show/home:Alexander_Naumov:openiked/openiked-portable)
+* [MacPorts](https://ports.macports.org/port/openiked/)
+* [Homebrew](https://formulae.brew.sh/formula/openiked)
 
 ### Building from source
 
