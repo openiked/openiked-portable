@@ -1,4 +1,4 @@
-/*	$OpenBSD: pfkey.c,v 1.81 2022/07/22 15:33:53 tobhe Exp $	*/
+/*	$OpenBSD: pfkey.c,v 1.82 2023/06/13 12:34:12 tb Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -2244,7 +2244,7 @@ pfkey_process(struct iked *env, struct pfkey_message *pm)
 		flow.flow_peer = &peer;
 
 		log_debug("%s: acquire request (peer %s)", __func__,
-		    print_host(speer, NULL, 0));
+		    print_addr(speer));
 
 #ifdef __OpenBSD__
 
@@ -2385,9 +2385,9 @@ pfkey_process(struct iked *env, struct pfkey_message *pm)
 
 		log_debug("%s: flow %s from %s/%s to %s/%s via %s", __func__,
 		    flow.flow_dir == IPSP_DIRECTION_IN ? "in" : "out",
-		    print_host(ssrc, NULL, 0), print_host(smask, NULL, 0),
-		    print_host(sdst, NULL, 0), print_host(dmask, NULL, 0),
-		    print_host(speer, NULL, 0));
+		    print_addr(ssrc), print_addr(smask),
+		    print_addr(sdst), print_addr(dmask),
+		    print_addr(speer));
 
 		ret = ikev2_child_sa_acquire(env, &flow);
 

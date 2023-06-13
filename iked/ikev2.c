@@ -1,4 +1,4 @@
-/*	$OpenBSD: ikev2.c,v 1.369 2023/06/13 08:45:41 claudio Exp $	*/
+/*	$OpenBSD: ikev2.c,v 1.370 2023/06/13 12:34:12 tb Exp $	*/
 
 /*
  * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
@@ -681,8 +681,8 @@ ikev2_recv(struct iked *env, struct iked_message *msg)
 	    print_map(hdr->ike_exchange, ikev2_exchange_map),
 	    msg->msg_response ? "res" : "req",
 	    msg->msg_msgid,
-	    print_host((struct sockaddr *)&msg->msg_peer, NULL, 0),
-	    print_host((struct sockaddr *)&msg->msg_local, NULL, 0),
+	    print_addr(&msg->msg_peer),
+	    print_addr(&msg->msg_local),
 	    ibuf_length(msg->msg_data),
 	    msg->msg_policy->pol_name);
 	log_debug("%s: ispi %s rspi %s", __func__,
@@ -795,8 +795,7 @@ ikev2_recv(struct iked *env, struct iked_message *msg)
 	sa->sa_fd = msg->msg_fd;
 
 	log_debug("%s: updated SA to peer %s local %s", __func__,
-	    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0),
-	    print_host((struct sockaddr *)&sa->sa_local.addr, NULL, 0));
+	    print_addr(&sa->sa_peer.addr), print_addr(&sa->sa_local.addr));
 
 done:
 	if (initiator)
@@ -1113,16 +1112,13 @@ ikev2_ike_auth_recv(struct iked *env, struct iked_sa *sa,
 	if (sa->sa_cp == IKEV2_CP_REPLY) {
 		if (sa->sa_cp_addr)
 			log_info("%s: obtained lease: %s", SPI_SA(sa, __func__),
-			    print_host((struct sockaddr *)&sa->sa_cp_addr->addr,
-			    NULL, 0));
+			    print_addr(&sa->sa_cp_addr->addr));
 		if (sa->sa_cp_addr6)
 			log_info("%s: obtained lease: %s", SPI_SA(sa, __func__),
-			    print_host((struct sockaddr *)&sa->sa_cp_addr6->addr,
-			    NULL, 0));
+			    print_addr(&sa->sa_cp_addr6->addr));
 		if (sa->sa_cp_dns)
 			log_info("%s: obtained DNS: %s", SPI_SA(sa, __func__),
-			    print_host((struct sockaddr *)&sa->sa_cp_dns->addr,
-			    NULL, 0));
+			    print_addr(&sa->sa_cp_dns->addr));
 	}
 
 	return ikev2_ike_auth(env, sa);
@@ -1308,8 +1304,7 @@ ikev2_enable_natt(struct iked *env, struct iked_sa *sa,
 
 	log_debug("%s: detected NAT, enabling UDP encapsulation,"
 	    " updated SA to peer %s local %s", __func__,
-	    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0),
-	    print_host((struct sockaddr *)&sa->sa_local.addr, NULL, 0));
+	    print_addr(&sa->sa_peer.addr), print_addr(&sa->sa_local.addr));
 }
 
 void
@@ -1330,9 +1325,7 @@ ikev2_init_ike_sa(struct iked *env, void *arg)
 
 		if (ikev2_init_ike_sa_peer(env, pol, &pol->pol_peer, NULL))
 			log_debug("%s: failed to initiate with peer %s",
-			    __func__,
-			    print_host((struct sockaddr *)&pol->pol_peer.addr,
-			    NULL, 0));
+			    __func__, print_addr(&pol->pol_peer.addr));
 	}
 
 	timer_set(env, &env->sc_inittmr, ikev2_init_ike_sa, NULL);
@@ -2351,7 +2344,7 @@ ikev2_nat_detection(struct iked *env, struct iked_message *msg,
 		    frompeer ? "peer" : "local",
 		    print_spi(betoh64(ispi), 8),
 		    print_spi(betoh64(rspi), 8),
-		    print_host(src, NULL, 0));
+		    print_addr(src));
 		ss = src;
 		break;
 	case IKEV2_N_NAT_DETECTION_DESTINATION_IP:
@@ -2359,7 +2352,7 @@ ikev2_nat_detection(struct iked *env, struct iked_message *msg,
 		    frompeer ? "peer" : "local",
 		    print_spi(betoh64(ispi), 8),
 		    print_spi(betoh64(rspi), 8),
-		    print_host(dst, NULL, 0));
+		    print_addr(dst));
 		ss = dst;
 		break;
 	default:
@@ -5252,12 +5245,12 @@ ikev2_ike_sa_keepalive(struct iked *env, void *arg)
 	    (struct sockaddr *)&sa->sa_local.addr, SS_LEN(sa->sa_local.addr))
 	    == -1)
 		log_warn("%s: sendtofrom: peer %s local %s", __func__,
-		    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0),
-		    print_host((struct sockaddr *)&sa->sa_local.addr, NULL, 0));
+		    print_addr(&sa->sa_peer.addr),
+		    print_addr(&sa->sa_local.addr));
 	else
 		log_debug("%s: peer %s local %s", __func__,
-		    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0),
-		    print_host((struct sockaddr *)&sa->sa_local.addr, NULL, 0));
+		    print_addr(&sa->sa_peer.addr),
+		    print_addr(&sa->sa_local.addr));
 	ikestat_inc(env, ikes_keepalive_sent);
 	timer_add(env, &sa->sa_keepalive, IKED_IKE_SA_KEEPALIVE_TIMEOUT);
 }
@@ -6601,18 +6594,15 @@ ikev2_childsa_enable(struct iked *env, struct iked_sa *sa)
 				fputs(", ", flowf);
 			fprintf(flowf, "%s-%s/%d%s%s%s%s%s=%s/%d(%u)%s",
 			    print_map(flow->flow_saproto, ikev2_saproto_map),
-			    print_host((struct sockaddr *)&flow->flow_src.addr,
-			    NULL, 0),
+			    print_addr(&flow->flow_src.addr),
 			    flow->flow_src.addr_mask,
 			    flow->flow_prenat.addr_af != 0 ? "[": "",
 			    flow->flow_prenat.addr_af != 0 ?
-			    print_host((struct sockaddr *)
-			    &flow->flow_prenat.addr, NULL, 0) : "",
+			    print_addr(&flow->flow_prenat.addr) : "",
 			    flow->flow_prenat.addr_af != 0 ? "/" : "",
 			    flow->flow_prenat.addr_af != 0 ? prenat_mask : "",
 			    flow->flow_prenat.addr_af != 0 ? "]": "",
-			    print_host((struct sockaddr *)&flow->flow_dst.addr,
-			    NULL, 0),
+			    print_addr(&flow->flow_dst.addr),
 			    flow->flow_dst.addr_mask,
 			    flow->flow_ipproto,
 			    reload ? "-R" : "");
@@ -6624,8 +6614,7 @@ ikev2_childsa_enable(struct iked *env, struct iked_sa *sa)
 		memcpy(&sa->sa_peer_loaded, &sa->sa_peer,
 		    sizeof(sa->sa_peer_loaded));
 		log_debug("%s: remember SA peer %s", __func__,
-		    print_host((struct sockaddr *)&sa->sa_peer_loaded.addr,
-		    NULL, 0));
+		    print_addr(&sa->sa_peer_loaded.addr));
 	}
 
 	fflush(spif);
@@ -7177,8 +7166,7 @@ ikev2_cp_setaddr_pool(struct iked *env, struct iked_sa *sa,
 			log_info(
 			    "%s: giving up assigned address %s to IKESA %s",
 			    SPI_SA(osa, __func__),
-			    print_host((struct sockaddr *)
-			    &sa->sa_addrpool->addr, NULL, 0),
+			    print_addr(&sa->sa_addrpool->addr),
 			    print_spi(sa->sa_hdr.sh_ispi, 8));
 		}
 		if (sa->sa_addrpool6) {
@@ -7186,8 +7174,7 @@ ikev2_cp_setaddr_pool(struct iked *env, struct iked_sa *sa,
 			log_info(
 			    "%s: giving up assigned v6 address %s to IKESA %s",
 			    SPI_SA(osa, __func__),
-			    print_host((struct sockaddr *)
-			    &sa->sa_addrpool6->addr, NULL, 0),
+			    print_addr(&sa->sa_addrpool6->addr),
 			    print_spi(sa->sa_hdr.sh_ispi, 8));
 		}
 		if (family == AF_INET && sa->sa_addrpool != NULL)
@@ -7320,7 +7307,7 @@ ikev2_cp_setaddr_pool(struct iked *env, struct iked_sa *sa,
 	if (ikev2_print_id(IKESA_DSTID(sa), idstr, sizeof(idstr)) == -1)
 		bzero(idstr, sizeof(idstr));
 	log_info("%sassigned address %s to %s%s", SPI_SA(sa, NULL),
-	    print_host((struct sockaddr *)&addr.addr, NULL, 0),
+	    print_addr(&addr.addr),
 	    idstr, requested ? " (requested by peer)" : "");
 	return (0);
 }
@@ -7426,8 +7413,8 @@ ikev2_update_sa_addresses(struct iked *env, struct iked_sa *sa)
 		return -1;
 
 	log_info("%s: old %s new %s", SPI_SA(sa, __func__),
-	    print_host((struct sockaddr *)&sa->sa_peer_loaded.addr, NULL, 0),
-	    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0));
+	    print_addr(&sa->sa_peer_loaded.addr),
+	    print_addr(&sa->sa_peer.addr));
 
 	TAILQ_FOREACH(csa, &sa->sa_childsas, csa_entry) {
 		if (!csa->csa_loaded)
@@ -7501,11 +7488,10 @@ ikev2_info_sa(struct iked *env, int dolog, const char *msg, struct iked_sa *sa)
 	    msg, sa,
 	    print_spi(sa->sa_hdr.sh_rspi, 8),
 	    print_spi(sa->sa_hdr.sh_ispi, 8),
-	    print_host((struct sockaddr *)&sa->sa_local.addr, NULL, 0),
-	    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0),
+	    print_addr(&sa->sa_local.addr),
+	    print_addr(&sa->sa_peer.addr),
 	    idstr,
-	    sa->sa_addrpool ?
-	    print_host((struct sockaddr *)&sa->sa_addrpool->addr, NULL, 0) : "",
+	    sa->sa_addrpool ? print_addr(&sa->sa_addrpool->addr) : "",
 	    print_map(sa->sa_state, ikev2_state_map),
 	    sa->sa_hdr.sh_initiator ? 'i' : 'r',
 	    sa->sa_natt ? " natt" : "",
@@ -7536,8 +7522,8 @@ ikev2_info_csa(struct iked *env, int dolog, const char *msg, struct iked_childsa
 	    print_map(csa->csa_saproto, ikev2_saproto_map),
 	    print_spi(csa->csa_spi.spi, csa->csa_spi.spi_size),
 	    csa->csa_dir == IPSP_DIRECTION_IN ? "in" : "out",
-	    print_host((struct sockaddr *)&csa->csa_local->addr, NULL, 0),
-	    print_host((struct sockaddr *)&csa->csa_peer->addr, NULL, 0),
+	    print_addr(&csa->csa_local->addr),
+	    print_addr(&csa->csa_peer->addr),
 	    csa->csa_loaded ? "L" : "",
 	    csa->csa_rekey ? "R" : "",
 	    csa->csa_allocated ? "A" : "",
@@ -7576,13 +7562,13 @@ ikev2_info_flow(struct iked *env, int dolog, const char *msg, struct iked_flow *
 	    "%s: %p %s %s %s/%d -> %s/%d %s%s%s%s%s[%u]@%d (%s) @%p\n", msg, flow,
 	    print_map(flow->flow_saproto, ikev2_saproto_map),
 	    flow->flow_dir == IPSP_DIRECTION_IN ? "in" : "out",
-	    print_host((struct sockaddr *)&flow->flow_src.addr, NULL, 0),
+	    print_addr(&flow->flow_src.addr),
 	    flow->flow_src.addr_mask,
-	    print_host((struct sockaddr *)&flow->flow_dst.addr, NULL, 0),
+	    print_addr(&flow->flow_dst.addr),
 	    flow->flow_dst.addr_mask,
 	    flow->flow_prenat.addr_af != 0 ? "[": "",
-	    flow->flow_prenat.addr_af != 0 ? print_host((struct sockaddr *)
-	    &flow->flow_prenat.addr, NULL, 0) : "",
+	    flow->flow_prenat.addr_af != 0 ?
+	    print_addr(&flow->flow_prenat.addr) : "",
 	    flow->flow_prenat.addr_af != 0 ? "/" : "",
 	    flow->flow_prenat.addr_af != 0 ? prenat_mask : "",
 	    flow->flow_prenat.addr_af != 0 ? "] ": "",
@@ -7668,14 +7654,12 @@ ikev2_log_established(struct iked_sa *sa)
 	log_info(
 	    "%sestablished peer %s[%s] local %s[%s]%s%s%s%s policy '%s'%s"
 	    " (enc %s%s%s group %s prf %s)", SPI_SA(sa, NULL),
-	    print_host((struct sockaddr *)&sa->sa_peer.addr, NULL, 0), dstid,
-	    print_host((struct sockaddr *)&sa->sa_local.addr, NULL, 0), srcid,
+	    print_addr(&sa->sa_peer.addr), dstid,
+	    print_addr(&sa->sa_local.addr), srcid,
 	    sa->sa_addrpool ? " assigned " : "",
-	    sa->sa_addrpool ?
-	    print_host((struct sockaddr *)&sa->sa_addrpool->addr, NULL, 0) : "",
+	    sa->sa_addrpool ? print_addr(&sa->sa_addrpool->addr) : "",
 	    sa->sa_addrpool6 ? " assigned " : "",
-	    sa->sa_addrpool6 ?
-	    print_host((struct sockaddr *)&sa->sa_addrpool6->addr, NULL, 0) : "",
+	    sa->sa_addrpool6 ? print_addr(&sa->sa_addrpool6->addr) : "",
 	    sa->sa_policy ? sa->sa_policy->pol_name : "",
 	    sa->sa_hdr.sh_initiator ? " as initiator" : " as responder",
 	    print_xf(sa->sa_encr->encr_id, cipher_keylength(sa->sa_encr) -
