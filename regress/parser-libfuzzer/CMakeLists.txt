@@ -1,4 +1,4 @@
-# Copyright (c) 2022 David Linder
+# Copyright (c) 2022-2023 David Linder
 # Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
@@ -20,6 +20,7 @@ list(APPEND SRCS
 	test_parser_fuzz.c
 )
 
+set(CMAKE_C_COMPILER clang)
 add_executable(test_libfuzzer ${SRCS})
 
 target_include_directories(test_libfuzzer
@@ -27,24 +28,19 @@ target_include_directories(test_libfuzzer
 )
 
 # when using clusterfuzz we need static linking and clusterfuzz' compiler arguments
-if(CLUSTERFUZZ)
-	set(CMAKE_C_COMPILER $ENV{CC})
-	set(CMAKE_C_FLAGS $ENV{CFLAGS})
-	set(CMAKE_EXE_LINKER_FLAGS $ENV{CFLAGS})
+if (DEFINED ENV{CC} AND DEFINED ENV{CFLAGS})
 	target_link_libraries(test_libfuzzer
 		"-lm -Wl,-Bstatic -lssl -lcrypto -levent" compat iked-shared $ENV{LIB_FUZZING_ENGINE}
 	)
 else()
-	set(CMAKE_C_COMPILER clang)
-	# address-sanitizer not working on OpenBSD
-	set(CMAKE_C_FLAGS "-g -O1 -fsanitize=fuzzer,address")
-	set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=fuzzer,address")
+	string(APPEND CMAKE_C_FLAGS " -fsanitize=fuzzer")
+	string(APPEND CMAKE_EXE_LINKER_FLAGS " -fsanitize=fuzzer")
 	target_link_libraries(test_libfuzzer
 		PRIVATE event crypto ssl compat iked-shared
 	)
 	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/corpus)
 	configure_file(run_test.sh run_test.sh COPYONLY)
-	configure_file(fuzz.dict fuzz.dict COPYONLY)
+	configure_file(test_libfuzzer.dict fuzz.dict COPYONLY)
 endif()
 
 target_compile_options(test_libfuzzer PRIVATE ${CFLAGS})

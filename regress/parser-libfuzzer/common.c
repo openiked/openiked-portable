@@ -232,15 +232,15 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 	struct iked_proposal *prop, *proptmp;
 
 	if (msg == msg->msg_parent) {
-		ibuf_release(msg->msg_nonce);
-		ibuf_release(msg->msg_ke);
-		ibuf_release(msg->msg_auth.id_buf);
-		ibuf_release(msg->msg_peerid.id_buf);
-		ibuf_release(msg->msg_localid.id_buf);
-		ibuf_release(msg->msg_cert.id_buf);
-		ibuf_release(msg->msg_cookie);
-		ibuf_release(msg->msg_cookie2);
-		ibuf_release(msg->msg_del_buf);
+		ibuf_free(msg->msg_nonce);
+		ibuf_free(msg->msg_ke);
+		ibuf_free(msg->msg_auth.id_buf);
+		ibuf_free(msg->msg_peerid.id_buf);
+		ibuf_free(msg->msg_localid.id_buf);
+		ibuf_free(msg->msg_cert.id_buf);
+		ibuf_free(msg->msg_cookie);
+		ibuf_free(msg->msg_cookie2);
+		ibuf_free(msg->msg_del_buf);
 		free(msg->msg_eap.eam_user);
 		free(msg->msg_cp_addr);
 		free(msg->msg_cp_addr6);
@@ -254,14 +254,14 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 		}
 
 		while ((cr = SIMPLEQ_FIRST(&msg->msg_certreqs))) {
-			ibuf_release(cr->cr_data);
+			ibuf_free(cr->cr_data);
 			SIMPLEQ_REMOVE_HEAD(&msg->msg_certreqs, cr_entry);
 			free(cr);
 		}
 	}
 
 	if (msg->msg_data != NULL) {
-		ibuf_release(msg->msg_data);
+		ibuf_free(msg->msg_data);
 		msg->msg_data = NULL;
 	}
 }
