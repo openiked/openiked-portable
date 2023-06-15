@@ -97,8 +97,8 @@ prepare_message(struct iked_message *msg, struct ibuf *data)
 	msg->msg_e = 1;
 	msg->msg_parent = msg;
 
-	TAILQ_INIT(&msg.msg_proposals);
-	SIMPLEQ_INIT(&msg.msg_certreqs);
+	TAILQ_INIT(&msg->msg_proposals);
+	SIMPLEQ_INIT(&msg->msg_certreqs);
 }
 
 /* Entry-Point for libFuzzer */
