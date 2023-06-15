@@ -16,6 +16,8 @@
 #include "iked.h"
 #include "types.h"
 
+#define IKEV2_FLAG_INITIATOR            0x08    /* Sent by the initiator */
+
 int	 eap_parse(struct iked *, const struct iked_sa *,
 	    struct iked_message *, void *, int);
 int	 ikev2_msg_frompeer(struct iked_message *);
@@ -59,9 +61,26 @@ eap_parse(struct iked *env, const struct iked_sa *sa, struct iked_message *msg,
 	return (0);
 }
 
+/* Copied from ikev2_msg.c for better coverage */
 int
 ikev2_msg_frompeer(struct iked_message *msg)
 {
+	struct iked_sa		*sa = msg->msg_sa;
+	struct ike_header	*hdr;
+
+	msg = msg->msg_parent;
+
+	if (sa == NULL ||
+	    (hdr = ibuf_seek(msg->msg_data, 0, sizeof(*hdr))) == NULL)
+		return (0);
+
+	if (!sa->sa_hdr.sh_initiator &&
+	    (hdr->ike_flags & IKEV2_FLAG_INITIATOR))
+		return (1);
+	else if (sa->sa_hdr.sh_initiator &&
+	    (hdr->ike_flags & IKEV2_FLAG_INITIATOR) == 0)
+		return (1);
+
 	return (0);
 }
 
