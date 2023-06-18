@@ -2484,9 +2484,9 @@ out:
 
 		log_debug("%s: flow %s from %s/%d to %s/%d via %s", __func__,
 		    flow.flow_dir == IPSP_DIRECTION_IN ? "in" : "out",
-		    print_host(ssrc, NULL, 0), flow.flow_src.addr_mask,
-		    print_host(sdst, NULL, 0), flow.flow_dst.addr_mask,
-		    print_host(speer, NULL, 0));
+		    print_addr(ssrc), flow.flow_src.addr_mask,
+		    print_addr(sdst), flow.flow_dst.addr_mask,
+		    print_addr(speer));
 
 		/* Free after the debug log above! */
 		free(reply);
