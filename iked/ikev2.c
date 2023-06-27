@@ -6978,7 +6978,7 @@ ikev2_print_id(struct iked_id *id, char *idstr, size_t idstrlen)
 	case IKEV2_ID_IPV4:
 		s4.sin_family = AF_INET;
 #ifdef HAVE_SOCKADDR_SA_LEN
-		s4->sin_len = sizeof(s4);
+		s4.sin_len = sizeof(s4);
 #endif
 		memcpy(&s4.sin_addr.s_addr, ptr, len);
 
@@ -6999,7 +6999,7 @@ ikev2_print_id(struct iked_id *id, char *idstr, size_t idstrlen)
 	case IKEV2_ID_IPV6:
 		s6.sin6_family = AF_INET6;
 #ifdef HAVE_SOCKADDR_SA_LEN
-		s6->sin6_len = sizeof(s6);
+		s6.sin6_len = sizeof(s6);
 #endif
 		memcpy(&s6.sin6_addr, ptr, len);
 
