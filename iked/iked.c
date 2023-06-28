@@ -1,4 +1,4 @@
-/*	$OpenBSD: iked.c,v 1.64 2023/03/05 22:17:22 tobhe Exp $	*/
+/*	$OpenBSD: iked.c,v 1.66 2023/06/28 12:31:19 gerhard Exp $	*/
 
 /*
  * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
@@ -235,8 +235,6 @@ main(int argc, char *argv[])
 
 	setproctitle("parent");
 	log_procinit("parent");
-	if (!debug && daemon(0, 0) == -1)
-		err(1, "failed to daemonize");
 
 	event_init();
 
