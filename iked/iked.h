@@ -1,4 +1,4 @@
-/*	$OpenBSD: iked.h,v 1.218 2023/06/19 17:19:50 claudio Exp $	*/
+/*	$OpenBSD: iked.h,v 1.220 2023/06/28 14:10:24 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -646,6 +646,7 @@ struct iked_message {
 	struct iked_id		 msg_peerid;
 	struct iked_id		 msg_localid;
 	struct iked_id		 msg_cert;
+	struct iked_id		 msg_scert[IKED_SCERT_MAX]; /* supplemental certs */
 	struct ibuf		*msg_cookie;
 	uint16_t		 msg_group;
 	uint16_t		 msg_cpi;
@@ -1199,6 +1200,7 @@ int	 ca_setcert(struct iked *, struct iked_sahdr *, struct iked_id *,
 int	 ca_setauth(struct iked *, struct iked_sa *,
 	    struct ibuf *, enum privsep_procid);
 void	 ca_getkey(struct privsep *, struct iked_id *, enum imsg_type);
+int	 ca_certbundle_add(struct ibuf *, struct iked_id *);
 int	 ca_privkey_serialize(EVP_PKEY *, struct iked_id *);
 int	 ca_pubkey_serialize(EVP_PKEY *, struct iked_id *);
 void	 ca_sslinit(void);
