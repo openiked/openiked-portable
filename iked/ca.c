@@ -2124,13 +2124,6 @@ ca_sslinit(void)
 	 */
 	if (OSSL_PROVIDER_load(NULL, "legacy") == NULL)
 		fatal("error enabling legacy provider");
-#else
-	OpenSSL_add_all_algorithms();
-	ERR_load_crypto_strings();
-
-	/* Init hardware crypto engines. */
-	ENGINE_load_builtin_engines();
-	ENGINE_register_all_complete();
 #endif
 }
 
