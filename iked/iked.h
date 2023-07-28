@@ -1,4 +1,4 @@
-/*	$OpenBSD: iked.h,v 1.222 2023/07/18 15:07:41 claudio Exp $	*/
+/*	$OpenBSD: iked.h,v 1.223 2023/07/28 11:23:03 claudio Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -1266,6 +1266,7 @@ const char *
 void	 lc_idtype(char *);
 void	 print_hex(const uint8_t *, off_t, size_t);
 void	 print_hexval(const uint8_t *, off_t, size_t);
+void	 print_hexbuf(struct ibuf *);
 const char *
 	 print_bits(unsigned short, unsigned char *);
 int	 sockaddr_cmp(struct sockaddr *, struct sockaddr *, int);
