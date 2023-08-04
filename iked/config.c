@@ -1,4 +1,4 @@
-/*	$OpenBSD: config.c,v 1.92 2023/05/23 13:12:19 claudio Exp $	*/
+/*	$OpenBSD: config.c,v 1.93 2023/08/04 19:06:25 claudio Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -1065,7 +1065,7 @@ config_setkeys(struct iked *env)
 	iov[0].iov_base = &privkey;
 	iov[0].iov_len = sizeof(privkey);
 	iov[1].iov_base = ibuf_data(privkey.id_buf);
-	iov[1].iov_len = ibuf_length(privkey.id_buf);
+	iov[1].iov_len = ibuf_size(privkey.id_buf);
 
 	if (proc_composev(&env->sc_ps, PROC_CERT, IMSG_PRIVKEY, iov, 2) == -1) {
 		log_warnx("%s: failed to send private key", __func__);
@@ -1075,7 +1075,7 @@ config_setkeys(struct iked *env)
 	iov[0].iov_base = &pubkey;
 	iov[0].iov_len = sizeof(pubkey);
 	iov[1].iov_base = ibuf_data(pubkey.id_buf);
-	iov[1].iov_len = ibuf_length(pubkey.id_buf);
+	iov[1].iov_len = ibuf_size(pubkey.id_buf);
 
 	if (proc_composev(&env->sc_ps, PROC_CERT, IMSG_PUBKEY, iov, 2) == -1) {
 		log_warnx("%s: failed to send public key", __func__);
