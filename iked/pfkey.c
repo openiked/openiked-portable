@@ -1,4 +1,4 @@
-/*	$OpenBSD: pfkey.c,v 1.82 2023/06/13 12:34:12 tb Exp $	*/
+/*	$OpenBSD: pfkey.c,v 1.83 2023/08/11 11:24:55 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -27,6 +27,7 @@
 
 #include <netinet/in.h>
 #include <netinet/ip_ipsp.h>
+#include <net/if.h>
 #include <net/pfkeyv2.h>
 #include <netinet/udp.h>
 
@@ -691,6 +692,12 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 	struct sadb_x_tag	 sa_tag;
 	char			*tag = NULL;
 #endif
+#ifdef SADB_X_EXT_IFACE
+	char			 iface[IF_NAMESIZE];
+	struct sadb_x_iface	 sa_iface;
+	const char		*errstr = NULL;
+	uint32_t		 ifminor;
+#endif
 #ifdef SADB_X_EXT_TAP
 	struct sadb_x_tap	 sa_tap;
 	int			 dotap = 0;
@@ -808,6 +815,9 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 	bzero(&sa_enckey, sizeof(sa_enckey));
 	bzero(&sa_ltime_hard, sizeof(sa_ltime_hard));
 	bzero(&sa_ltime_soft, sizeof(sa_ltime_soft));
+#ifdef SADB_X_EXT_IFACE
+	bzero(&sa_iface, sizeof(sa_iface));
+#endif
 
 #if defined(SADB_X_EXT_UDPENCAP)
 	bzero(&udpencap, sizeof udpencap);
@@ -1005,6 +1015,26 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 	}
 #endif
 
+#ifdef SADB_X_EXT_IFACE
+	if (pol->pol_flags & IKED_POLICY_ROUTING) {
+		sa_iface.sadb_x_iface_exttype = SADB_X_EXT_IFACE;
+		sa_iface.sadb_x_iface_len = sizeof(sa_iface) / 8;
+		if (if_indextoname(pol->pol_iface, iface) == NULL) {
+			log_warnx("%s: unsupported interface %s",
+			    __func__, iface);
+			return (-1);
+		}
+		ifminor = strtonum(iface + strlen("sec"), 0, UINT_MAX, &errstr);
+		if (errstr != NULL) {
+			log_warnx("%s: unsupported interface %s",
+			    __func__, iface);
+			return (-1);
+		}
+		sa_iface.sadb_x_iface_unit = ifminor;
+		sa_iface.sadb_x_iface_direction = sa->csa_dir;
+	}
+#endif
+
  send:
 
 #define PAD(len)					\
@@ -1167,6 +1197,15 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 		smsg.sadb_msg_len += sa_tag.sadb_x_tag_len;
 		iov_cnt++;
 		PAD(strlen(tag) + 1);
+	}
+#endif
+
+#ifdef SADB_X_EXT_IFACE
+	if (sa_iface.sadb_x_iface_len) {
+		iov[iov_cnt].iov_base = &sa_iface;
+		iov[iov_cnt].iov_len = sa_iface.sadb_x_iface_len * 8;
+		smsg.sadb_msg_len += sa_iface.sadb_x_iface_len;
+		iov_cnt++;
 	}
 #endif
 
