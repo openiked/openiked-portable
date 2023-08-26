@@ -131,7 +131,7 @@ list(APPEND LIBS
 	iked-shared
 )
 
-if (HAVE_SYSTEMD)
+if (WITH_SYSTEMD)
 	list(APPEND LIBS systemd)
 endif()
 
