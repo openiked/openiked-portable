@@ -112,9 +112,15 @@ endif()
 target_include_directories(iked PRIVATE ${INC_DIRS})
 target_include_directories(iked-shared PRIVATE ${INC_DIRS})
 
-target_link_libraries(iked-shared
-	PRIVATE util event crypto ssl compat
-)
+if(CLUSTERFUZZ AND DEFINED ENV{CC} AND DEFINED ENV{CFLAGS})
+	target_link_libraries(iked-shared
+        	"-lm -Wl,-Bstatic -lssl -lcrypto -levent -Wl,-Bdynamic" compat
+	)
+else()
+	target_link_libraries(iked-shared
+		PRIVATE util event crypto ssl compat
+	)
+endif()
 
 list(APPEND LIBS
 	util
