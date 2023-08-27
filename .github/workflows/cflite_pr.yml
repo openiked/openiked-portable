@@ -2,8 +2,8 @@ name: ClusterFuzzLite PR fuzzing
 on:
   pull_request:
     paths:
-      - 'iked/ikev2_pld.c'
-      - 'regress/parser-libfuzzer/**'
+      - iked/ikev2_pld.c
+      - regress/parser-libfuzzer/**
 permissions: read-all
 jobs:
   PR:
