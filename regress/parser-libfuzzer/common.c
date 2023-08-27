@@ -244,11 +244,12 @@ ikev2_msg_lookup(struct iked *env, struct iked_msgqueue *queue,
 	return NULL;
 }
 
+/* copied from ikev2_msg.c */
 void
 ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 {
-	struct iked_certreq *cr;
-	struct iked_proposal *prop, *proptmp;
+	struct iked_certreq	*cr;
+	int			 i;
 
 	if (msg == msg->msg_parent) {
 		ibuf_free(msg->msg_nonce);
@@ -257,21 +258,33 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 		ibuf_free(msg->msg_peerid.id_buf);
 		ibuf_free(msg->msg_localid.id_buf);
 		ibuf_free(msg->msg_cert.id_buf);
+		for (i = 0; i < IKED_SCERT_MAX; i++)
+			ibuf_free(msg->msg_scert[i].id_buf);
 		ibuf_free(msg->msg_cookie);
 		ibuf_free(msg->msg_cookie2);
 		ibuf_free(msg->msg_del_buf);
 		free(msg->msg_eap.eam_user);
 		free(msg->msg_cp_addr);
 		free(msg->msg_cp_addr6);
+		free(msg->msg_cp_dns);
 
-		TAILQ_FOREACH_SAFE(prop, &msg->msg_proposals, prop_entry,
-		    proptmp) {
-			TAILQ_REMOVE(&msg->msg_proposals, prop, prop_entry);
-			if (prop->prop_nxforms)
-				free(prop->prop_xforms);
-			free(prop);
-		}
+		msg->msg_nonce = NULL;
+		msg->msg_ke = NULL;
+		msg->msg_auth.id_buf = NULL;
+		msg->msg_peerid.id_buf = NULL;
+		msg->msg_localid.id_buf = NULL;
+		msg->msg_cert.id_buf = NULL;
+		for (i = 0; i < IKED_SCERT_MAX; i++)
+			msg->msg_scert[i].id_buf = NULL;
+		msg->msg_cookie = NULL;
+		msg->msg_cookie2 = NULL;
+		msg->msg_del_buf = NULL;
+		msg->msg_eap.eam_user = NULL;
+		msg->msg_cp_addr = NULL;
+		msg->msg_cp_addr6 = NULL;
+		msg->msg_cp_dns = NULL;
 
+		/* config_free_proposals(&msg->msg_proposals, 0); */
 		while ((cr = SIMPLEQ_FIRST(&msg->msg_certreqs))) {
 			ibuf_free(cr->cr_data);
 			SIMPLEQ_REMOVE_HEAD(&msg->msg_certreqs, cr_entry);
