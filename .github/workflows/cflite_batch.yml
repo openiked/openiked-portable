@@ -1,8 +1,7 @@
 name: ClusterFuzzLite batch fuzzing
 on:
-  push
-  #schedule:
-    #- cron: '0 0/6 * * *'  # Every 6th hour. Change this to whatever is suitable.
+  schedule:
+    - cron: '0 0/6 * * *'  # Every 6th hour. Change this to whatever is suitable.
 permissions: read-all
 jobs:
   BatchFuzzing:

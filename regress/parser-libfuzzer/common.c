@@ -248,7 +248,8 @@ ikev2_msg_lookup(struct iked *env, struct iked_msgqueue *queue,
 void
 ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 {
-	struct iked_certreq	*cr;
+	struct iked_certreq *cr;
+	struct iked_proposal *prop, *proptmp;
 	int			 i;
 
 	if (msg == msg->msg_parent) {
@@ -268,6 +269,14 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 		free(msg->msg_cp_addr6);
 		free(msg->msg_cp_dns);
 
+		TAILQ_FOREACH_SAFE(prop, &msg->msg_proposals, prop_entry,
+		    proptmp) {
+			TAILQ_REMOVE(&msg->msg_proposals, prop, prop_entry);
+			if (prop->prop_nxforms)
+				free(prop->prop_xforms);
+			free(prop);
+		}
+
 		msg->msg_nonce = NULL;
 		msg->msg_ke = NULL;
 		msg->msg_auth.id_buf = NULL;
@@ -284,7 +293,6 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 		msg->msg_cp_addr6 = NULL;
 		msg->msg_cp_dns = NULL;
 
-		/* config_free_proposals(&msg->msg_proposals, 0); */
 		while ((cr = SIMPLEQ_FIRST(&msg->msg_certreqs))) {
 			ibuf_free(cr->cr_data);
 			SIMPLEQ_REMOVE_HEAD(&msg->msg_certreqs, cr_entry);
