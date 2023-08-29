@@ -852,7 +852,9 @@ ikev2_pld_cert(struct iked *env, struct ikev2_payload *pld,
 			return (0);
 		}
 	}
-
+	if (certid->id_buf) {
+		ibuf_free(certid->id_buf);
+	}
 	if ((certid->id_buf = ibuf_new(buf, len)) == NULL) {
 		log_debug("%s: failed to save cert", __func__);
 		return (-1);
