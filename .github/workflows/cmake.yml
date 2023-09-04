@@ -106,10 +106,10 @@ jobs:
 
     - name: Build
       run: |
-        git clone https://github.com/openiked/openiked-portable.git
+        git clone --depth=1 https://github.com/openiked/openiked-portable.git
+        mkdir build; cd build
 	[ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
         cd openiked-portable
-        mkdir build; cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         make
         cd regress/dh; ./dhtest
@@ -128,9 +128,9 @@ jobs:
 
     - name: Build
       run: |
-        git clone https://github.com/openiked/openiked-portable.git
-	[ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
+        git clone --depth=1 https://github.com/openiked/openiked-portable.git
         cd openiked-portable
+	[ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
         mkdir build; cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         make
@@ -147,9 +147,9 @@ jobs:
 
     - name: Build
       run: |
-        git clone https://github.com/openiked/openiked-portable.git
-	[ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
+        git clone --depth=1 https://github.com/openiked/openiked-portable.git
         cd openiked-portable
+	[ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
         mkdir build; cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         make
