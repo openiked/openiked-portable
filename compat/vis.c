@@ -1,4 +1,4 @@
-/*	$OpenBSD: vis.c,v 1.19 2005/09/01 17:15:49 millert Exp $ */
+/*	$OpenBSD: vis.c,v 1.26 2022/05/04 18:57:50 deraadt Exp $ */
 /*-
  * Copyright (c) 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -32,22 +32,49 @@
 
 #if !defined(HAVE_STRNVIS)
 
+#include <sys/types.h>
+#include <errno.h>
 #include <ctype.h>
+#include <limits.h>
 #include <string.h>
+#include <stdlib.h>
+#include <vis.h>
 
-#include "vis.h"
+static int
+isoctal(int c)
+{
+	u_char uc = c;
 
-#define	isoctal(c)	(((u_char)(c)) >= '0' && ((u_char)(c)) <= '7')
-#define	isvisible(c)							\
-	(((u_int)(c) <= UCHAR_MAX && isascii((u_char)(c)) &&		\
-	(((c) != '*' && (c) != '?' && (c) != '[' && (c) != '#') ||	\
-		(flag & VIS_GLOB) == 0) && isgraph((u_char)(c))) ||	\
-	((flag & VIS_SP) == 0 && (c) == ' ') ||				\
-	((flag & VIS_TAB) == 0 && (c) == '\t') ||			\
-	((flag & VIS_NL) == 0 && (c) == '\n') ||			\
-	((flag & VIS_SAFE) && ((c) == '\b' ||				\
-		(c) == '\007' || (c) == '\r' ||				\
-		isgraph((u_char)(c)))))
+	return uc >= '0' && uc <= '7';
+}
+
+static int
+isvisible(int c, int flag)
+{
+	int vis_sp = flag & VIS_SP;
+	int vis_tab = flag & VIS_TAB;
+	int vis_nl = flag & VIS_NL;
+	int vis_safe = flag & VIS_SAFE;
+	int vis_glob = flag & VIS_GLOB;
+	int vis_all = flag & VIS_ALL;
+	u_char uc = c;
+
+	if (c == '\\' || !vis_all) {
+		if ((u_int)c <= UCHAR_MAX && isascii(uc) &&
+		    ((c != '*' && c != '?' && c != '[' && c != '#') || !vis_glob) &&
+		    isgraph(uc))
+			return 1;
+		if (!vis_sp && c == ' ')
+			return 1;
+		if (!vis_tab && c == '\t')
+			return 1;
+		if (!vis_nl && c == '\n')
+			return 1;
+		if (vis_safe && (c == '\b' || c == '\007' || c == '\r' || isgraph(uc)))
+			return 1;
+	}
+	return 0;
+}
 
 /*
  * vis - visually encode characters
@@ -55,16 +82,23 @@
 char *
 vis(char *dst, int c, int flag, int nextc)
 {
-	if (isvisible(c)) {
-		*dst++ = c;
-		if (c == '\\' && (flag & VIS_NOSLASH) == 0)
+	int vis_dq = flag & VIS_DQ;
+	int vis_noslash = flag & VIS_NOSLASH;
+	int vis_cstyle = flag & VIS_CSTYLE;
+	int vis_octal = flag & VIS_OCTAL;
+	int vis_glob = flag & VIS_GLOB;
+
+	if (isvisible(c, flag)) {
+		if ((c == '"' && vis_dq) ||
+		    (c == '\\' && !vis_noslash))
 			*dst++ = '\\';
+		*dst++ = c;
 		*dst = '\0';
 		return (dst);
 	}
 
-	if (flag & VIS_CSTYLE) {
-		switch(c) {
+	if (vis_cstyle) {
+		switch (c) {
 		case '\n':
 			*dst++ = '\\';
 			*dst++ = 'n';
@@ -107,15 +141,15 @@ vis(char *dst, int c, int flag, int nextc)
 			goto done;
 		}
 	}
-	if (((c & 0177) == ' ') || (flag & VIS_OCTAL) ||
-	    ((flag & VIS_GLOB) && (c == '*' || c == '?' || c == '[' || c == '#'))) {
+	if (((c & 0177) == ' ') || vis_octal ||
+	    (vis_glob && (c == '*' || c == '?' || c == '[' || c == '#'))) {
 		*dst++ = '\\';
 		*dst++ = ((u_char)c >> 6 & 07) + '0';
 		*dst++ = ((u_char)c >> 3 & 07) + '0';
 		*dst++ = ((u_char)c & 07) + '0';
 		goto done;
 	}
-	if ((flag & VIS_NOSLASH) == 0)
+	if (!vis_noslash)
 		*dst++ = '\\';
 	if (c & 0200) {
 		c &= 0177;
@@ -164,25 +198,26 @@ strvis(char *dst, const char *src, int flag)
 int
 strnvis(char *dst, const char *src, size_t siz, int flag)
 {
+	int vis_dq = flag & VIS_DQ;
+	int vis_noslash = flag & VIS_NOSLASH;
 	char *start, *end;
 	char tbuf[5];
 	int c, i;
 
 	i = 0;
 	for (start = dst, end = start + siz - 1; (c = *src) && dst < end; ) {
-		if (isvisible(c)) {
-			i = 1;
-			*dst++ = c;
-			if (c == '\\' && (flag & VIS_NOSLASH) == 0) {
+		if (isvisible(c, flag)) {
+			if ((c == '"' && vis_dq) ||
+			    (c == '\\' && !vis_noslash)) {
 				/* need space for the extra '\\' */
-				if (dst < end)
-					*dst++ = '\\';
-				else {
-					dst--;
+				if (dst + 1 >= end) {
 					i = 2;
 					break;
 				}
+				*dst++ = '\\';
 			}
+			i = 1;
+			*dst++ = c;
 			src++;
 		} else {
 			i = vis(tbuf, c, flag, *++src) - tbuf;
@@ -203,6 +238,25 @@ strnvis(char *dst, const char *src, size_t siz, int flag)
 			dst += vis(tbuf, c, flag, *++src) - tbuf;
 	}
 	return (dst - start);
+}
+
+int
+stravis(char **outp, const char *src, int flag)
+{
+	char *buf;
+	int len, serrno;
+
+	buf = reallocarray(NULL, 4, strlen(src) + 1);
+	if (buf == NULL)
+		return -1;
+	len = strvis(buf, src, flag);
+	serrno = errno;
+	*outp = realloc(buf, len + 1);
+	if (*outp == NULL) {
+		*outp = buf;
+		errno = serrno;
+	}
+	return (len);
 }
 
 int
