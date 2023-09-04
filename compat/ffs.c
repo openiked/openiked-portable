@@ -1,4 +1,4 @@
-/*	$OpenBSD: ffs.c,v 1.9 2014/06/10 04:16:57 deraadt Exp $	*/
+/*	$OpenBSD: ffs.c,v 1.10 2018/01/18 08:23:44 guenther Exp $	*/
 
 /*
  * Public domain.
