@@ -112,7 +112,7 @@ endif()
 target_include_directories(iked PRIVATE ${INC_DIRS})
 target_include_directories(iked-shared PRIVATE ${INC_DIRS})
 
-if(CLUSTERFUZZ AND DEFINED ENV{CC} AND DEFINED ENV{CFLAGS})
+if(DEFINED ENV{CLUSTERFUZZLITE})
 	target_link_libraries(iked-shared
         	"-lm -Wl,-Bstatic -lssl -lcrypto -levent -Wl,-Bdynamic" compat
 	)
