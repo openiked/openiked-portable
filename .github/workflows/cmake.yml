@@ -108,7 +108,7 @@ jobs:
       run: |
         git clone --depth=1 https://github.com/openiked/openiked-portable.git
         cd openiked-portable
-	[ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
+        [ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
         mkdir build; cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         make
@@ -130,7 +130,7 @@ jobs:
       run: |
         git clone --depth=1 https://github.com/openiked/openiked-portable.git
         cd openiked-portable
-	[ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
+        [ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
         mkdir build; cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         make
@@ -149,7 +149,7 @@ jobs:
       run: |
         git clone --depth=1 https://github.com/openiked/openiked-portable.git
         cd openiked-portable
-	[ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
+        [ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
         mkdir build; cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         make
