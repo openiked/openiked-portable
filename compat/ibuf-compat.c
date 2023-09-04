@@ -18,6 +18,8 @@
 
 /* ibuf API functions added to OpenBSD's imsg-buffer.c in June 2023. */
 
+#ifdef HAVE_IMSG_H
+
 #if !defined(HAVE_IBUF_ADD_BUF) || !defined(HAVE_IBUF_ADD_ZERO)
 #include <sys/queue.h>
 
@@ -70,3 +72,5 @@ ibuf_data(struct ibuf *buf)
 	return (ibuf_seek(buf, 0, 0));
 }
 #endif /* !defined(HAVE_IBUF_DATA) */
+
+#endif /* HAVE_IMSG_H */
