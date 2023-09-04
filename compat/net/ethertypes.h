@@ -1,4 +1,4 @@
-/*	$OpenBSD: ethertypes.h,v 1.13 2019/10/29 03:19:16 dlg Exp $	*/
+/*	$OpenBSD: ethertypes.h,v 1.18 2023/04/13 23:02:12 dlg Exp $	*/
 /*	$NetBSD: ethertypes.h,v 1.13 2002/02/10 01:28:32 thorpej Exp $	*/
 
 /*
@@ -96,13 +96,14 @@
 #define	ETHERTYPE_VALID		0x1600	/* VALID system protocol */
 #define	ETHERTYPE_DOGFIGHT	0x1989	/* Artificial Horizons ("Aviator" dogfight simulator [on Sun]) */
 #define	ETHERTYPE_RCL		0x1995	/* Datapoint Corporation (RCL lan protocol) */
+#define	ETHERTYPE_NHRP		0x2001	/* NBMA Next Hop Resolution Protocol (RFC2332) */
 
 					/* The following 3C0x types
 					   are unregistered: */
 #define	ETHERTYPE_NBPVCD	0x3C00	/* 3Com NBP virtual circuit datagram (like XNS SPP) not registered */
 #define	ETHERTYPE_NBPSCD	0x3C01	/* 3Com NBP System control datagram not registered */
 #define	ETHERTYPE_NBPCREQ	0x3C02	/* 3Com NBP Connect request (virtual cct) not registered */
-#define	ETHERTYPE_NBPCRSP	0x3C03	/* 3Com NBP Connect repsonse not registered */
+#define	ETHERTYPE_NBPCRSP	0x3C03	/* 3Com NBP Connect response not registered */
 #define	ETHERTYPE_NBPCC		0x3C04	/* 3Com NBP Connect complete not registered */
 #define	ETHERTYPE_NBPCLREQ	0x3C05	/* 3Com NBP Close request (virtual cct) not registered */
 #define	ETHERTYPE_NBPCLRSP	0x3C06	/* 3Com NBP Close response not registered */
@@ -298,12 +299,15 @@
 #define	ETHERTYPE_PPPOEDISC	0x8863	/* PPP Over Ethernet Discovery Stage */
 #define	ETHERTYPE_PPPOE		0x8864	/* PPP Over Ethernet Session Stage */
 #define	ETHERTYPE_LANPROBE	0x8888	/* HP LanProbe test? */
-#define	ETHERTYPE_PAE		0x888E	/* 802.1X Port Access Entity */
+#define	ETHERTYPE_EAPOL		0x888E	/* 802.1X EAP over LAN */
 #define	ETHERTYPE_AOE		0x88A2	/* ATA over Ethernet */
 #define	ETHERTYPE_QINQ		0x88A8	/* 802.1ad VLAN stacking */
 #define	ETHERTYPE_LLDP		0x88CC	/* Link Layer Discovery Protocol */
+#define	ETHERTYPE_802_EX1	0x88B5	/* IEEE Std 802 - Local Experimental */
+#define	ETHERTYPE_802_EX2	0x88B6	/* IEEE Std 802 - Local Experimental */
 #define	ETHERTYPE_MACSEC	0x88e5	/* 802.1AE MACsec */
 #define	ETHERTYPE_PBB		0x88e7	/* 802.1Q Provider Backbone Bridging */
+#define	ETHERTYPE_NSH		0x894F	/* Network Service Header (RFC8300) */
 #define	ETHERTYPE_LOOPBACK	0x9000	/* Loopback */
 #define	ETHERTYPE_LBACK		ETHERTYPE_LOOPBACK	/* DEC MOP loopback */
 #define	ETHERTYPE_XNSSM		0x9001	/* 3Com (Formerly Bridge Communications), XNS Systems Management */
