@@ -31,7 +31,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_SYSTEMD
+#ifdef WITH_SYSTEMD
 #include "systemd/sd-bus.h"
 #endif
 
@@ -51,7 +51,7 @@ void vroute_insertdns(struct iked *, int, struct sockaddr *);
 void vroute_removedns(struct iked *, int, struct sockaddr *);
 void vroute_insertroute(struct iked *, struct sockaddr *);
 void vroute_removeroute(struct iked *, struct sockaddr *);
-#ifdef HAVE_SYSTEMD
+#ifdef WITH_SYSTEMD
 int vroute_dbus_default_route(struct iked *, int, sd_bus_error *, int,
     const char *, const char *, const char *);
 int vroute_dbus_dns(struct iked *, int, sd_bus_error *, int, const char *,
@@ -87,7 +87,7 @@ struct iked_vroute_sc {
 	struct vroute_dnss	 ivr_dnss;
 	struct vroute_routes	 ivr_routes;
 	int			 ivr_rtsock;
-#ifdef HAVE_SYSTEMD
+#ifdef WITH_SYSTEMD
 	sd_bus			*ivr_bus;
 #endif
 };
@@ -109,7 +109,7 @@ vroute_init(struct iked *env)
 	    NETLINK_ROUTE)) == -1)
 		fatal("%s: failed to create netlink socket", __func__);
 
-#ifdef HAVE_SYSTEMD
+#ifdef WITH_SYSTEMD
 	int r;
 	r = sd_bus_open_system(&ivr->ivr_bus);
 	if (r < 0) {
@@ -742,7 +742,7 @@ vroute_doaddr(struct iked *env, int ifidx, struct sockaddr *addr,
 int
 vroute_dodns(struct iked *env, int add, unsigned int ifindex)
 {
-#ifdef HAVE_SYSTEMD
+#ifdef WITH_SYSTEMD
 	const char *destination = "org.freedesktop.resolve1";
 	const char *path = "/org/freedesktop/resolve1";
 	const char *interface = "org.freedesktop.resolve1.Manager";
@@ -834,7 +834,7 @@ nl_addattr(struct nlmsghdr *hdr, int type, void *data, size_t len)
 	return (0);
 }
 
-#ifdef HAVE_SYSTEMD
+#ifdef WITH_SYSTEMD
 int
 vroute_dbus_default_route(struct iked *env, int ifidx, sd_bus_error *error, int add,
     const char *destination, const char *path, const char *interface)
@@ -918,4 +918,4 @@ vroute_dbus_dns(struct iked *env, int ifidx, sd_bus_error *error, int add,
 	ret = sd_bus_call(bus, req, 0, error, NULL);
 	return (ret);
 }
-#endif /* HAVE_SYSTEMD */
+#endif /* WITH_SYSTEMD */

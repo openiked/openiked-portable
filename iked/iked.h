@@ -1,4 +1,4 @@
-/*	$OpenBSD: iked.h,v 1.220 2023/06/28 14:10:24 tobhe Exp $	*/
+/*	$OpenBSD: iked.h,v 1.224 2023/08/11 11:24:55 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -264,6 +264,7 @@ struct iked_policy {
 #define IKED_POLICY_SKIP		 0x10
 #define IKED_POLICY_IPCOMP		 0x20
 #define IKED_POLICY_TRANSPORT		 0x40
+#define IKED_POLICY_ROUTING		 0x80
 
 	int				 pol_refcnt;
 
@@ -1266,6 +1267,7 @@ const char *
 void	 lc_idtype(char *);
 void	 print_hex(const uint8_t *, off_t, size_t);
 void	 print_hexval(const uint8_t *, off_t, size_t);
+void	 print_hexbuf(struct ibuf *);
 const char *
 	 print_bits(unsigned short, unsigned char *);
 int	 sockaddr_cmp(struct sockaddr *, struct sockaddr *, int);
@@ -1292,12 +1294,10 @@ struct ibuf *
 	 ibuf_new(const void *, size_t);
 struct ibuf *
 	 ibuf_static(void);
-int	 ibuf_cat(struct ibuf *, struct ibuf *);
 size_t	 ibuf_length(struct ibuf *);
 int	 ibuf_setsize(struct ibuf *, size_t);
-void	*ibuf_getdata(struct ibuf *, size_t);
 struct ibuf *
-	 ibuf_get(struct ibuf *, size_t);
+	 ibuf_getdata(struct ibuf *, size_t);
 struct ibuf *
 	 ibuf_dup(struct ibuf *);
 struct ibuf *

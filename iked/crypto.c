@@ -1,4 +1,4 @@
-/*	$OpenBSD: crypto.c,v 1.44 2023/06/06 13:27:49 claudio Exp $	*/
+/*	$OpenBSD: crypto.c,v 1.46 2023/08/04 19:06:25 claudio Exp $	*/
 
 /*
  * Copyright (c) 2020-2021 Tobias Heider <tobhe@openbsd.org>
@@ -328,8 +328,8 @@ hash_free(struct iked_hash *hash)
 void
 hash_init(struct iked_hash *hash)
 {
-	HMAC_Init_ex(hash->hash_ctx, hash->hash_key->buf,
-	    ibuf_length(hash->hash_key), hash->hash_priv, NULL);
+	HMAC_Init_ex(hash->hash_ctx, ibuf_data(hash->hash_key),
+	    ibuf_size(hash->hash_key), hash->hash_priv, NULL);
 }
 
 void
@@ -573,7 +573,7 @@ cipher_init(struct iked_cipher *encr, int enc)
 		    encr->encr_saltlength), encr->encr_saltlength);
 		if (nonce == NULL)
 			return (-1);
-		if (ibuf_add(nonce, ibuf_data(encr->encr_iv) , ibuf_size(encr->encr_iv)) != 0)
+		if (ibuf_add_buf(nonce, encr->encr_iv) != 0)
 			goto done;
 		if (EVP_CipherInit_ex(encr->encr_ctx, NULL, NULL,
 		    ibuf_data(encr->encr_key), ibuf_data(nonce), enc) != 1)
@@ -924,7 +924,7 @@ dsa_init(struct iked_dsa *dsa, const void *buf, size_t len)
 
 	if (dsa->dsa_hmac) {
 		if (!HMAC_Init_ex(dsa->dsa_ctx, ibuf_data(dsa->dsa_keydata),
-		    ibuf_length(dsa->dsa_keydata), dsa->dsa_priv, NULL))
+		    ibuf_size(dsa->dsa_keydata), dsa->dsa_priv, NULL))
 			return (-1);
 		return (0);
 	}

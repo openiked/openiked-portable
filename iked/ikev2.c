@@ -1,4 +1,4 @@
-/*	$OpenBSD: ikev2.c,v 1.372 2023/06/28 14:10:24 tobhe Exp $	*/
+/*	$OpenBSD: ikev2.c,v 1.379 2023/11/10 08:03:02 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
@@ -124,7 +124,8 @@ void	 ikev2_ike_sa_rekey_schedule_fast(struct iked *, struct iked_sa *);
 void	 ikev2_ike_sa_alive(struct iked *, void *);
 void	 ikev2_ike_sa_keepalive(struct iked *, void *);
 
-int	 ikev2_sa_negotiate_common(struct iked *, struct iked_sa *, struct iked_message *);
+int	 ikev2_sa_negotiate_common(struct iked *, struct iked_sa *,
+	    struct iked_message *, int);
 int	 ikev2_sa_initiator(struct iked *, struct iked_sa *,
 	    struct iked_sa *, struct iked_message *);
 int	 ikev2_sa_responder(struct iked *, struct iked_sa *, struct iked_sa *,
@@ -683,7 +684,7 @@ ikev2_recv(struct iked *env, struct iked_message *msg)
 	    msg->msg_msgid,
 	    print_addr(&msg->msg_peer),
 	    print_addr(&msg->msg_local),
-	    ibuf_length(msg->msg_data),
+	    ibuf_size(msg->msg_data),
 	    msg->msg_policy->pol_name);
 	log_debug("%s: ispi %s rspi %s", __func__,
 	    print_spi(betoh64(hdr->ike_ispi), 8),
@@ -745,9 +746,9 @@ ikev2_recv(struct iked *env, struct iked_message *msg)
 		if (sa->sa_state == IKEV2_STATE_CLOSED && sa->sa_1stmsg &&
 		    hdr->ike_exchange == IKEV2_EXCHANGE_IKE_SA_INIT &&
 		    msg->msg_msgid == 0 &&
-		    (ibuf_length(msg->msg_data) != ibuf_length(sa->sa_1stmsg) ||
+		    (ibuf_size(msg->msg_data) != ibuf_size(sa->sa_1stmsg) ||
 		    memcmp(ibuf_data(msg->msg_data), ibuf_data(sa->sa_1stmsg),
-		    ibuf_length(sa->sa_1stmsg)) != 0)) {
+		    ibuf_size(sa->sa_1stmsg)) != 0)) {
 			ikev2_ike_sa_setreason(sa, NULL);
 			sa_free(env, sa);
 			msg->msg_sa = sa = NULL;
@@ -909,7 +910,7 @@ ikev2_auth_verify(struct iked *env, struct iked_sa *sa)
 
 	ret = ikev2_msg_authverify(env, sa, &ikeauth,
 	    ibuf_data(sa->sa_peerauth.id_buf),
-	    ibuf_length(sa->sa_peerauth.id_buf),
+	    ibuf_size(sa->sa_peerauth.id_buf),
 	    authmsg);
 	ibuf_free(authmsg);
 	if (ret != 0) {
@@ -1127,7 +1128,7 @@ ikev2_ike_auth_recv(struct iked *env, struct iked_sa *sa,
 		if (msg->msg_cert.id_type) {
 			certtype = msg->msg_cert.id_type;
 			cert = ibuf_data(msg->msg_cert.id_buf);
-			certlen = ibuf_length(msg->msg_cert.id_buf);
+			certlen = ibuf_size(msg->msg_cert.id_buf);
 		}
 		sa->sa_stateflags &= ~IKED_REQ_CERTVALID;
 		if (ca_setcert(env, &sa->sa_hdr, id, certtype, cert, certlen, PROC_CERT) == -1)
@@ -1455,7 +1456,7 @@ ikev2_init_ike_sa_peer(struct iked *env, struct iked_policy *pol,
 
 		log_debug("%s: added cookie, len %zu", __func__,
 		    ibuf_size(cookie));
-		print_hex(ibuf_data(cookie), 0, ibuf_size(cookie));
+		print_hexbuf(cookie);
 
 		if (ikev2_next_payload(pld, len, IKEV2_PAYLOAD_SA) == -1)
 			goto done;
@@ -1483,7 +1484,7 @@ ikev2_init_ike_sa_peer(struct iked *env, struct iked_policy *pol,
 	ke->kex_dhgroup = htobe16(group->id);
 	if (ikev2_add_buf(buf, sa->sa_dhiexchange) == -1)
 		goto done;
-	len = sizeof(*ke) + ibuf_length(sa->sa_dhiexchange);
+	len = sizeof(*ke) + ibuf_size(sa->sa_dhiexchange);
 
 	if (ikev2_next_payload(pld, len, IKEV2_PAYLOAD_NONCE) == -1)
 		goto done;
@@ -1621,7 +1622,7 @@ ikev2_init_ike_auth(struct iked *env, struct iked_sa *sa)
 	if ((pld = ikev2_add_payload(e)) == NULL)
 		goto done;
 	firstpayload = IKEV2_PAYLOAD_IDi;
-	if (ibuf_cat(e, id->id_buf) != 0)
+	if (ibuf_add_buf(e, id->id_buf) != 0)
 		goto done;
 	len = ibuf_size(id->id_buf);
 
@@ -1635,7 +1636,7 @@ ikev2_init_ike_auth(struct iked *env, struct iked_sa *sa)
 			goto done;
 		if ((pld = ikev2_add_payload(e)) == NULL)
 			goto done;
-		if (ibuf_cat(e, peerid.id_buf) != 0)
+		if (ibuf_add_buf(e, peerid.id_buf) != 0)
 			goto done;
 		len = ibuf_size(peerid.id_buf);
 	}
@@ -1651,7 +1652,7 @@ ikev2_init_ike_auth(struct iked *env, struct iked_sa *sa)
 		if ((cert = ibuf_reserve(e, sizeof(*cert))) == NULL)
 			goto done;
 		cert->cert_type = certid->id_type;
-		if (ibuf_cat(e, certid->id_buf) != 0)
+		if (ibuf_add_buf(e, certid->id_buf) != 0)
 			goto done;
 		len = ibuf_size(certid->id_buf) + sizeof(*cert);
 
@@ -1666,7 +1667,7 @@ ikev2_init_ike_auth(struct iked *env, struct iked_sa *sa)
 			if ((cert = ibuf_reserve(e, sizeof(*cert))) == NULL)
 				goto done;
 			cert->cert_type = sa->sa_scert[i].id_type;
-			if (ibuf_cat(e, sa->sa_scert[i].id_buf) != 0)
+			if (ibuf_add_buf(e, sa->sa_scert[i].id_buf) != 0)
 				goto done;
 			len = ibuf_size(sa->sa_scert[i].id_buf) + sizeof(*cert);
 		}
@@ -1691,7 +1692,7 @@ ikev2_init_ike_auth(struct iked *env, struct iked_sa *sa)
 	if ((auth = ibuf_reserve(e, sizeof(*auth))) == NULL)
 		goto done;
 	auth->auth_method = sa->sa_localauth.id_type;
-	if (ibuf_cat(e, sa->sa_localauth.id_buf) != 0)
+	if (ibuf_add_buf(e, sa->sa_localauth.id_buf) != 0)
 		goto done;
 	len = ibuf_size(sa->sa_localauth.id_buf) + sizeof(*auth);
 
@@ -2237,10 +2238,10 @@ ikev2_add_vendor_id(struct ibuf *e, struct ikev2_payload **pld,
 			return (-1);
 	if ((*pld = ikev2_add_payload(e)) == NULL)
 		return (-1);
-	if (ibuf_cat(e, id) == -1)
+	if (ibuf_add_buf(e, id) == -1)
 		return (-1);
 
-	return (ibuf_length(id));
+	return (ibuf_size(id));
 }
 
 ssize_t
@@ -3769,7 +3770,7 @@ ikev2_handle_certreq(struct iked* env, struct iked_message *msg)
 
 			ca_setreq(env, sa, &sa->sa_policy->pol_localid,
 			    cr->cr_type, more, ibuf_data(cr->cr_data),
-			    ibuf_length(cr->cr_data),
+			    ibuf_size(cr->cr_data),
 			    PROC_CERT);
 
 			ibuf_free(cr->cr_data);
@@ -3933,7 +3934,7 @@ ikev2_resp_ike_auth(struct iked *env, struct iked_sa *sa)
 		if ((pld = ikev2_add_payload(e)) == NULL)
 			goto done;
 		firstpayload = IKEV2_PAYLOAD_IDr;
-		if (ibuf_cat(e, id->id_buf) != 0)
+		if (ibuf_add_buf(e, id->id_buf) != 0)
 			goto done;
 		len = ibuf_size(id->id_buf);
 
@@ -3949,7 +3950,7 @@ ikev2_resp_ike_auth(struct iked *env, struct iked_sa *sa)
 			if ((cert = ibuf_reserve(e, sizeof(*cert))) == NULL)
 				goto done;
 			cert->cert_type = certid->id_type;
-			if (ibuf_cat(e, certid->id_buf) != 0)
+			if (ibuf_add_buf(e, certid->id_buf) != 0)
 				goto done;
 			len = ibuf_size(certid->id_buf) + sizeof(*cert);
 
@@ -3965,7 +3966,8 @@ ikev2_resp_ike_auth(struct iked *env, struct iked_sa *sa)
 				    sizeof(*cert))) == NULL)
 					goto done;
 				cert->cert_type = sa->sa_scert[i].id_type;
-				if (ibuf_cat(e, sa->sa_scert[i].id_buf) != 0)
+				if (ibuf_add_buf(e, sa->sa_scert[i].id_buf) !=
+				    0)
 					goto done;
 				len = ibuf_size(sa->sa_scert[i].id_buf)
 				    + sizeof(*cert);
@@ -3983,7 +3985,7 @@ ikev2_resp_ike_auth(struct iked *env, struct iked_sa *sa)
 	if ((auth = ibuf_reserve(e, sizeof(*auth))) == NULL)
 		goto done;
 	auth->auth_method = sa->sa_localauth.id_type;
-	if (ibuf_cat(e, sa->sa_localauth.id_buf) != 0)
+	if (ibuf_add_buf(e, sa->sa_localauth.id_buf) != 0)
 		goto done;
 	len = ibuf_size(sa->sa_localauth.id_buf) + sizeof(*auth);
 
@@ -4061,7 +4063,7 @@ ikev2_send_ike_e(struct iked *env, struct iked_sa *sa, struct ibuf *buf,
 		goto done;
 
 	if (buf) {
-		if (ibuf_cat(e, buf) != 0)
+		if (ibuf_add_buf(e, buf) != 0)
 			goto done;
 
 		if (ikev2_next_payload(pld, ibuf_size(buf),
@@ -4234,7 +4236,7 @@ ikev2_send_create_child_sa(struct iked *env, struct iked_sa *sa,
 		ke->kex_dhgroup = htobe16(group->id);
 		if (ikev2_add_buf(e, sa->sa_dhiexchange) == -1)
 			goto done;
-		len = sizeof(*ke) + ibuf_length(sa->sa_dhiexchange);
+		len = sizeof(*ke) + ibuf_size(sa->sa_dhiexchange);
 	}
 
 	if ((len = ikev2_add_ts(e, &pld, len, sa, !initiator)) == -1)
@@ -4367,7 +4369,7 @@ ikev2_ike_sa_rekey(struct iked *env, void *arg)
 	ke->kex_dhgroup = htobe16(group->id);
 	if (ikev2_add_buf(e, nsa->sa_dhiexchange) == -1)
 		goto done;
-	len = sizeof(*ke) + ibuf_length(nsa->sa_dhiexchange);
+	len = sizeof(*ke) + ibuf_size(nsa->sa_dhiexchange);
 
 	if (ikev2_next_payload(pld, len, IKEV2_PAYLOAD_NONE) == -1)
 		goto done;
@@ -4401,8 +4403,8 @@ ikev2_nonce_cmp(struct ibuf *a, struct ibuf *b)
 	size_t				alen, blen, len;
 	int				ret;
 
-	alen = ibuf_length(a);
-	blen = ibuf_length(b);
+	alen = ibuf_size(a);
+	blen = ibuf_size(b);
 	len = MINIMUM(alen, blen);
 	ret = memcmp(ibuf_data(a), ibuf_data(b), len);
 	if (ret == 0)
@@ -5102,7 +5104,7 @@ ikev2_resp_create_child_sa(struct iked *env, struct iked_message *msg)
 		ke->kex_dhgroup = htobe16(kex->kex_dhgroup->id);
 		if (ikev2_add_buf(e, kex->kex_dhrexchange) == -1)
 			goto done;
-		len = sizeof(*ke) + ibuf_length(kex->kex_dhrexchange);
+		len = sizeof(*ke) + ibuf_size(kex->kex_dhrexchange);
 	}
 
 	if (protoid != IKEV2_SAPROTO_IKE)
@@ -5347,7 +5349,7 @@ ikev2_send_informational(struct iked *env, struct iked_message *msg)
 			log_debug("%s: encryption failed", __func__);
 			goto done;
 		}
-		if (ibuf_cat(buf, e) != 0)
+		if (ibuf_add_buf(buf, e) != 0)
 			goto done;
 		if (ikev2_next_payload(pld, ibuf_size(e),
 		    IKEV2_PAYLOAD_NOTIFY) == -1)
@@ -5378,7 +5380,7 @@ ikev2_send_informational(struct iked *env, struct iked_message *msg)
 		    IKEV2_PAYLOAD_NOTIFY, IKEV2_EXCHANGE_INFORMATIONAL,
 		    0)) == NULL)
 			goto done;
-		if (ibuf_cat(buf, e) != 0)
+		if (ibuf_add_buf(buf, e) != 0)
 			goto done;
 		if (ikev2_set_header(hdr, ibuf_size(buf) - sizeof(*hdr)) == -1)
 			goto done;
@@ -5469,13 +5471,14 @@ ikev2_sa_initiator_dh(struct iked_sa *sa, struct iked_message *msg,
 }
 
 int
-ikev2_sa_negotiate_common(struct iked *env, struct iked_sa *sa, struct iked_message *msg)
+ikev2_sa_negotiate_common(struct iked *env, struct iked_sa *sa,
+    struct iked_message *msg, int groupid)
 {
 	struct iked_transform	*xform;
 
 	/* XXX we need a better way to get this */
 	if (proposals_negotiate(&sa->sa_proposals,
-	    &msg->msg_policy->pol_proposals, &msg->msg_proposals, 0, -1) != 0) {
+	    &msg->msg_policy->pol_proposals, &msg->msg_proposals, 0, groupid) != 0) {
 		log_info("%s: proposals_negotiate", __func__);
 		ikestat_inc(env, ikes_sa_proposals_negotiate_failures);
 		return (-1);
@@ -5569,7 +5572,7 @@ ikev2_sa_initiator(struct iked *env, struct iked_sa *sa,
 		msg->msg_nonce = NULL;
 	}
 
-	if (ikev2_sa_negotiate_common(env, sa, msg) != 0)
+	if (ikev2_sa_negotiate_common(env, sa, msg, -1) != 0)
 		return (-1);
 
 	ibuf_free(sa->sa_2ndmsg);
@@ -5667,7 +5670,7 @@ ikev2_sa_responder(struct iked *env, struct iked_sa *sa, struct iked_sa *osa,
 		return (-1);
 	}
 
-	if (!ibuf_length(sa->sa_rnonce) &&
+	if (sa->sa_rnonce == NULL &&
 	    (sa->sa_rnonce = ibuf_random(IKED_NONCE_SIZE)) == NULL) {
 		log_debug("%s: failed to get local nonce", __func__);
 		return (-1);
@@ -5681,7 +5684,7 @@ ikev2_sa_responder(struct iked *env, struct iked_sa *sa, struct iked_sa *osa,
 	sa->sa_inonce = msg->msg_nonce;
 	msg->msg_nonce = NULL;
 
-	if (ikev2_sa_negotiate_common(env, sa, msg) != 0)
+	if (ikev2_sa_negotiate_common(env, sa, msg, msg->msg_dhgroup) != 0)
 		return (-1);
 
 	if (ikev2_sa_responder_dh(&sa->sa_kex, &sa->sa_proposals, msg, 0) < 0)
@@ -5763,15 +5766,15 @@ ikev2_sa_keys(struct iked *env, struct iked_sa *sa, struct ibuf *key)
 	}
 
 	log_debug("%s: DHSECRET with %zu bytes", SPI_SA(sa, __func__),
-	    ibuf_length(dhsecret));
-	print_hex(dhsecret->buf, 0, ibuf_length(dhsecret));
+	    ibuf_size(dhsecret));
+	print_hexbuf(dhsecret);
 
 	if (!key) {
 		/*
 		 * Set PRF key to generate SKEYSEED = prf(Ni | Nr, g^ir)
 		 */
-		if ((ninr = ibuf_new(sa->sa_inonce->buf, ilen)) == NULL ||
-		    ibuf_add(ninr, sa->sa_rnonce->buf, rlen) != 0) {
+		if ((ninr = ibuf_new(ibuf_data(sa->sa_inonce), ilen)) == NULL ||
+		    ibuf_add(ninr, ibuf_data(sa->sa_rnonce), rlen) != 0) {
 			log_info("%s: failed to get nonce key buffer",
 			    SPI_SA(sa, __func__));
 			goto done;
@@ -5781,15 +5784,15 @@ ikev2_sa_keys(struct iked *env, struct iked_sa *sa, struct ibuf *key)
 		/*
 		 * Set PRF key to generate SKEYSEED = prf(key, g^ir | Ni | Nr)
 		 */
-		if (ibuf_add(dhsecret, sa->sa_inonce->buf, ilen) != 0 ||
-		    ibuf_add(dhsecret, sa->sa_rnonce->buf, rlen) != 0) {
+		if (ibuf_add(dhsecret, ibuf_data(sa->sa_inonce), ilen) != 0 ||
+		    ibuf_add(dhsecret, ibuf_data(sa->sa_rnonce), rlen) != 0) {
 			log_info("%s: failed to get nonce key buffer",
 			    SPI_SA(sa, __func__));
 			goto done;
 		}
 	}
 
-	if ((hash_setkey(prf, key->buf, ibuf_length(key))) == NULL) {
+	if ((hash_setkey(prf, ibuf_data(key), ibuf_size(key))) == NULL) {
 		log_info("%s: failed to set prf key", SPI_SA(sa, __func__));
 		goto done;
 	}
@@ -5802,11 +5805,11 @@ ikev2_sa_keys(struct iked *env, struct iked_sa *sa, struct ibuf *key)
 
 	tmplen = 0;
 	hash_init(prf);
-	hash_update(prf, dhsecret->buf, ibuf_length(dhsecret));
-	hash_final(prf, skeyseed->buf, &tmplen);
+	hash_update(prf, ibuf_data(dhsecret), ibuf_size(dhsecret));
+	hash_final(prf, ibuf_data(skeyseed), &tmplen);
 
 	log_debug("%s: SKEYSEED with %zu bytes", __func__, tmplen);
-	print_hex(skeyseed->buf, 0, tmplen);
+	print_hex(ibuf_data(skeyseed), 0, tmplen);
 
 	if (ibuf_setsize(skeyseed, tmplen) == -1) {
 		log_info("%s: failed to set keymaterial length",
@@ -5826,8 +5829,8 @@ ikev2_sa_keys(struct iked *env, struct iked_sa *sa, struct ibuf *key)
 	ispi = htobe64(sa->sa_hdr.sh_ispi);
 	rspi = htobe64(sa->sa_hdr.sh_rspi);
 
-	if ((s = ibuf_new(sa->sa_inonce->buf, ilen)) == NULL ||
-	    ibuf_add(s, sa->sa_rnonce->buf, rlen) != 0 ||
+	if ((s = ibuf_new(ibuf_data(sa->sa_inonce), ilen)) == NULL ||
+	    ibuf_add(s, ibuf_data(sa->sa_rnonce), rlen) != 0 ||
 	    ibuf_add(s, &ispi, sizeof(ispi)) != 0 ||
 	    ibuf_add(s, &rspi, sizeof(rspi)) != 0) {
 		log_info("%s: failed to set S buffer",
@@ -5835,8 +5838,8 @@ ikev2_sa_keys(struct iked *env, struct iked_sa *sa, struct ibuf *key)
 		goto done;
 	}
 
-	log_debug("%s: S with %zu bytes", SPI_SA(sa, __func__), ibuf_length(s));
-	print_hex(s->buf, 0, ibuf_length(s));
+	log_debug("%s: S with %zu bytes", SPI_SA(sa, __func__), ibuf_size(s));
+	print_hexbuf(s);
 
 	/*
 	 * Get the size of the key material we need and the number
@@ -5856,45 +5859,46 @@ ikev2_sa_keys(struct iked *env, struct iked_sa *sa, struct ibuf *key)
 		goto done;
 	}
 
-	/* ibuf_get() returns a new buffer from the next read offset */
-	if ((sa->sa_key_d = ibuf_get(t, hash_length(prf))) == NULL ||
+	/* ibuf_getdata() returns a new buffer from the next read offset */
+	if ((sa->sa_key_d = ibuf_getdata(t, hash_length(prf))) == NULL ||
 	    (!isaead &&
-	    (sa->sa_key_iauth = ibuf_get(t, hash_keylength(integr))) == NULL) ||
+	    (sa->sa_key_iauth = ibuf_getdata(t, hash_keylength(integr))) ==
+	    NULL) ||
 	    (!isaead &&
-	    (sa->sa_key_rauth = ibuf_get(t, hash_keylength(integr))) == NULL) ||
-	    (sa->sa_key_iencr = ibuf_get(t, cipher_keylength(encr))) == NULL ||
-	    (sa->sa_key_rencr = ibuf_get(t, cipher_keylength(encr))) == NULL ||
-	    (sa->sa_key_iprf = ibuf_get(t, hash_length(prf))) == NULL ||
-	    (sa->sa_key_rprf = ibuf_get(t, hash_length(prf))) == NULL) {
+	    (sa->sa_key_rauth = ibuf_getdata(t, hash_keylength(integr))) ==
+	    NULL) ||
+	    (sa->sa_key_iencr = ibuf_getdata(t, cipher_keylength(encr))) ==
+	    NULL ||
+	    (sa->sa_key_rencr = ibuf_getdata(t, cipher_keylength(encr))) ==
+	    NULL ||
+	    (sa->sa_key_iprf = ibuf_getdata(t, hash_length(prf))) == NULL ||
+	    (sa->sa_key_rprf = ibuf_getdata(t, hash_length(prf))) == NULL) {
 		log_debug("%s: failed to get SA keys", SPI_SA(sa, __func__));
 		goto done;
 	}
 
-	log_debug("%s: SK_d with %zu bytes", __func__,
-	    ibuf_length(sa->sa_key_d));
-	print_hex(sa->sa_key_d->buf, 0, ibuf_length(sa->sa_key_d));
+	log_debug("%s: SK_d with %zu bytes", __func__, ibuf_size(sa->sa_key_d));
+	print_hexbuf(sa->sa_key_d);
 	if (!isaead) {
 		log_debug("%s: SK_ai with %zu bytes", __func__,
-		    ibuf_length(sa->sa_key_iauth));
-		print_hex(sa->sa_key_iauth->buf, 0,
-		    ibuf_length(sa->sa_key_iauth));
+		    ibuf_size(sa->sa_key_iauth));
+		print_hexbuf(sa->sa_key_iauth);
 		log_debug("%s: SK_ar with %zu bytes", __func__,
-		    ibuf_length(sa->sa_key_rauth));
-		print_hex(sa->sa_key_rauth->buf, 0,
-		    ibuf_length(sa->sa_key_rauth));
+		    ibuf_size(sa->sa_key_rauth));
+		print_hexbuf(sa->sa_key_rauth);
 	}
 	log_debug("%s: SK_ei with %zu bytes", __func__,
-	    ibuf_length(sa->sa_key_iencr));
-	print_hex(sa->sa_key_iencr->buf, 0, ibuf_length(sa->sa_key_iencr));
+	    ibuf_size(sa->sa_key_iencr));
+	print_hexbuf(sa->sa_key_iencr);
 	log_debug("%s: SK_er with %zu bytes", __func__,
-	    ibuf_length(sa->sa_key_rencr));
-	print_hex(sa->sa_key_rencr->buf, 0, ibuf_length(sa->sa_key_rencr));
+	    ibuf_size(sa->sa_key_rencr));
+	print_hexbuf(sa->sa_key_rencr);
 	log_debug("%s: SK_pi with %zu bytes", __func__,
-	    ibuf_length(sa->sa_key_iprf));
-	print_hex(sa->sa_key_iprf->buf, 0, ibuf_length(sa->sa_key_iprf));
+	    ibuf_size(sa->sa_key_iprf));
+	print_hexbuf(sa->sa_key_iprf);
 	log_debug("%s: SK_pr with %zu bytes", __func__,
-	    ibuf_length(sa->sa_key_rprf));
-	print_hex(sa->sa_key_rprf->buf, 0, ibuf_length(sa->sa_key_rprf));
+	    ibuf_size(sa->sa_key_rprf));
+	print_hexbuf(sa->sa_key_rprf);
 
 	ret = 0;
 
@@ -5952,33 +5956,33 @@ ikev2_prfplus(struct iked_hash *prf, struct ibuf *key, struct ibuf *seed,
 
 	for (i = 0; i < rlen; i++) {
 		if (t1 != NULL) {
-			t2 = ibuf_new(t1->buf, ibuf_length(t1));
+			t2 = ibuf_new(ibuf_data(t1), ibuf_size(t1));
 			ibuf_free(t1);
 		} else
 			t2 = ibuf_new(NULL, 0);
 		t1 = ibuf_new(NULL, hash_keylength(prf));
 
-		ibuf_add(t2, seed->buf, ibuf_length(seed));
+		ibuf_add_buf(t2, seed);
 		pad = i + 1;
 		ibuf_add(t2, &pad, 1);
 
 		hash_init(prf);
-		hash_update(prf, t2->buf, ibuf_length(t2));
-		hash_final(prf, t1->buf, &hashlen);
+		hash_update(prf, ibuf_data(t2), ibuf_size(t2));
+		hash_final(prf, ibuf_data(t1), &hashlen);
 
 		if (hashlen != hash_length(prf))
 			fatalx("ikev2_prfplus: hash length mismatch");
 
 		ibuf_free(t2);
-		ibuf_add(t, t1->buf, ibuf_length(t1));
+		ibuf_add_buf(t, t1);
 
 		log_debug("%s: T%d with %zu bytes", __func__,
-		    pad, ibuf_length(t1));
-		print_hex(t1->buf, 0, ibuf_length(t1));
+		    pad, ibuf_size(t1));
+		print_hexbuf(t1);
 	}
 
-	log_debug("%s: Tn with %zu bytes", __func__, ibuf_length(t));
-	print_hex(t->buf, 0, ibuf_length(t));
+	log_debug("%s: Tn with %zu bytes", __func__, ibuf_size(t));
+	print_hexbuf(t);
 
 	ibuf_free(t1);
 
@@ -6203,7 +6207,7 @@ ikev2_childsa_negotiate(struct iked *env, struct iked_sa *sa,
 	if (pfs) {
 		log_debug("%s: using PFS", __func__);
 		if (kex->kex_dhpeer == NULL ||
-		    ibuf_length(kex->kex_dhpeer) == 0 ||
+		    ibuf_size(kex->kex_dhpeer) == 0 ||
 		    (group = kex->kex_dhgroup) == NULL) {
 			log_debug("%s: no dh group for pfs", __func__);
 			goto done;
@@ -6215,13 +6219,13 @@ ikev2_childsa_negotiate(struct iked *env, struct iked_sa *sa,
 			    ibuf_length(kex->kex_dhpeer));
 			goto done;
 		}
-		if (ibuf_cat(seed, dhsecret) != 0) {
+		if (ibuf_add_buf(seed, dhsecret) != 0) {
 			log_debug("%s: failed to set dh secret", __func__);
 			goto done;
 		}
 	}
-	if (ibuf_cat(seed, kex->kex_inonce) != 0 ||
-	    ibuf_cat(seed, kex->kex_rnonce) != 0 ||
+	if (ibuf_add_buf(seed, kex->kex_inonce) != 0 ||
+	    ibuf_add_buf(seed, kex->kex_rnonce) != 0 ||
 	    (keymat = ikev2_prfplus(sa->sa_prf,
 	    sa->sa_key_d, seed, ilen)) == NULL) {
 		log_debug("%s: failed to get IKE SA key material", __func__);
@@ -6351,13 +6355,13 @@ ikev2_childsa_negotiate(struct iked *env, struct iked_sa *sa,
 			csa->csa_spi.spi_size = 4;
 		}
 
-		if (encrxf && (csa->csa_encrkey = ibuf_get(keymat,
+		if (encrxf && (csa->csa_encrkey = ibuf_getdata(keymat,
 		    encrxf->xform_keylength / 8)) == NULL) {
 			log_debug("%s: failed to get CHILD SA encryption key",
 			    __func__);
 			goto done;
 		}
-		if (integrxf && (csa->csa_integrkey = ibuf_get(keymat,
+		if (integrxf && (csa->csa_integrkey = ibuf_getdata(keymat,
 		    integrxf->xform_keylength / 8)) == NULL) {
 			log_debug("%s: failed to get CHILD SA integrity key",
 			    __func__);
@@ -6384,13 +6388,13 @@ ikev2_childsa_negotiate(struct iked *env, struct iked_sa *sa,
 		csb->csa_local = csa->csa_peer;
 		csb->csa_peer = csa->csa_local;
 
-		if (encrxf && (csb->csa_encrkey = ibuf_get(keymat,
+		if (encrxf && (csb->csa_encrkey = ibuf_getdata(keymat,
 		    encrxf->xform_keylength / 8)) == NULL) {
 			log_debug("%s: failed to get CHILD SA encryption key",
 			    __func__);
 			goto done;
 		}
-		if (integrxf && (csb->csa_integrkey = ibuf_get(keymat,
+		if (integrxf && (csb->csa_integrkey = ibuf_getdata(keymat,
 		    integrxf->xform_keylength / 8)) == NULL) {
 			log_debug("%s: failed to get CHILD SA integrity key",
 			    __func__);
@@ -6574,63 +6578,65 @@ ikev2_childsa_enable(struct iked *env, struct iked_sa *sa)
 	peer_changed = (memcmp(&sa->sa_peer_loaded, &sa->sa_peer,
 	    sizeof(sa->sa_peer_loaded)) != 0);
 
-	TAILQ_FOREACH(flow, &sa->sa_flows, flow_entry) {
-		/* re-load the flow if the peer for the flow has changed */
-		reload = 0;
-		if (flow->flow_loaded) {
-			if (!peer_changed) {
-				log_debug("%s: flow already loaded %p",
-				    __func__, flow);
-				continue;
+	if (!(sa->sa_policy->pol_flags & IKED_POLICY_ROUTING)) {
+		TAILQ_FOREACH(flow, &sa->sa_flows, flow_entry) {
+			/* re-load the flow if the peer for the flow has changed */
+			reload = 0;
+			if (flow->flow_loaded) {
+				if (!peer_changed) {
+					log_debug("%s: flow already loaded %p",
+					    __func__, flow);
+					continue;
+				}
+				RB_REMOVE(iked_flows, &env->sc_activeflows, flow);
+				(void)ipsec_flow_delete(env, flow);
+				flow->flow_loaded = 0; /* we did RB_REMOVE */
+				reload = 1;
 			}
-			RB_REMOVE(iked_flows, &env->sc_activeflows, flow);
-			(void)ipsec_flow_delete(env, flow);
-			flow->flow_loaded = 0; /* we did RB_REMOVE */
-			reload = 1;
-		}
 
-		if (ipsec_flow_add(env, flow) != 0) {
-			log_debug("%s: failed to load flow", __func__);
-			goto done;
-		}
+			if (ipsec_flow_add(env, flow) != 0) {
+				log_debug("%s: failed to load flow", __func__);
+				goto done;
+			}
 
-		if ((oflow = RB_FIND(iked_flows, &env->sc_activeflows, flow))
-		    != NULL) {
-			log_debug("%s: replaced old flow %p with %p",
-			    __func__, oflow, flow);
-			oflow->flow_loaded = 0;
-			RB_REMOVE(iked_flows, &env->sc_activeflows, oflow);
-		}
+			if ((oflow = RB_FIND(iked_flows, &env->sc_activeflows, flow))
+			    != NULL) {
+				log_debug("%s: replaced old flow %p with %p",
+				    __func__, oflow, flow);
+				oflow->flow_loaded = 0;
+				RB_REMOVE(iked_flows, &env->sc_activeflows, oflow);
+			}
 
-		RB_INSERT(iked_flows, &env->sc_activeflows, flow);
+			RB_INSERT(iked_flows, &env->sc_activeflows, flow);
 
-		log_debug("%s: %sloaded flow %p", __func__,
-		    reload ? "re" : "", flow);
+			log_debug("%s: %sloaded flow %p", __func__,
+			    reload ? "re" : "", flow);
 
-		/* append flow to log buffer */
-		if (flow->flow_dir == IPSP_DIRECTION_OUT &&
-		    flow->flow_prenat.addr_af != 0)
-			snprintf(prenat_mask, sizeof(prenat_mask), "%d",
-			    flow->flow_prenat.addr_mask);
-		else
-			prenat_mask[0] = '\0';
-		if (flow->flow_dir == IPSP_DIRECTION_OUT) {
-			if (ftello(flowf) > 0)
-				fputs(", ", flowf);
-			fprintf(flowf, "%s-%s/%d%s%s%s%s%s=%s/%d(%u)%s",
-			    print_map(flow->flow_saproto, ikev2_saproto_map),
-			    print_addr(&flow->flow_src.addr),
-			    flow->flow_src.addr_mask,
-			    flow->flow_prenat.addr_af != 0 ? "[": "",
-			    flow->flow_prenat.addr_af != 0 ?
-			    print_addr(&flow->flow_prenat.addr) : "",
-			    flow->flow_prenat.addr_af != 0 ? "/" : "",
-			    flow->flow_prenat.addr_af != 0 ? prenat_mask : "",
-			    flow->flow_prenat.addr_af != 0 ? "]": "",
-			    print_addr(&flow->flow_dst.addr),
-			    flow->flow_dst.addr_mask,
-			    flow->flow_ipproto,
-			    reload ? "-R" : "");
+			/* append flow to log buffer */
+			if (flow->flow_dir == IPSP_DIRECTION_OUT &&
+			    flow->flow_prenat.addr_af != 0)
+				snprintf(prenat_mask, sizeof(prenat_mask), "%d",
+				    flow->flow_prenat.addr_mask);
+			else
+				prenat_mask[0] = '\0';
+			if (flow->flow_dir == IPSP_DIRECTION_OUT) {
+				if (ftello(flowf) > 0)
+					fputs(", ", flowf);
+				fprintf(flowf, "%s-%s/%d%s%s%s%s%s=%s/%d(%u)%s",
+				    print_map(flow->flow_saproto, ikev2_saproto_map),
+				    print_addr(&flow->flow_src.addr),
+				    flow->flow_src.addr_mask,
+				    flow->flow_prenat.addr_af != 0 ? "[": "",
+				    flow->flow_prenat.addr_af != 0 ?
+				    print_addr(&flow->flow_prenat.addr) : "",
+				    flow->flow_prenat.addr_af != 0 ? "/" : "",
+				    flow->flow_prenat.addr_af != 0 ? prenat_mask : "",
+				    flow->flow_prenat.addr_af != 0 ? "]": "",
+				    print_addr(&flow->flow_dst.addr),
+				    flow->flow_dst.addr_mask,
+				    flow->flow_ipproto,
+				    reload ? "-R" : "");
+			}
 		}
 	}
 
@@ -7698,7 +7704,7 @@ ikev2_log_cert_info(const char *msg, struct iked_id *certid)
 	    certid->id_buf == NULL)
 		return;
 	if ((rawcert = BIO_new_mem_buf(ibuf_data(certid->id_buf),
-	    ibuf_length(certid->id_buf))) == NULL ||
+	    ibuf_size(certid->id_buf))) == NULL ||
 	    (cert = d2i_X509_bio(rawcert, NULL)) == NULL)
 		goto out;
 	ca_cert_info(msg, cert);

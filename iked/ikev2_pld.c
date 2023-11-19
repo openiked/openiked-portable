@@ -1,4 +1,4 @@
-/*	$OpenBSD: ikev2_pld.c,v 1.131 2023/06/28 14:10:24 tobhe Exp $	*/
+/*	$OpenBSD: ikev2_pld.c,v 1.133 2023/09/02 18:36:30 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
@@ -685,7 +685,7 @@ ikev2_pld_ke(struct iked *env, struct ikev2_payload *pld,
 	print_hex(buf, 0, len);
 
 	if (ikev2_msg_frompeer(msg)) {
-		if (ibuf_length(msg->msg_parent->msg_ke)) {
+		if (msg->msg_parent->msg_ke != NULL) {
 			log_info("%s: duplicate KE payload", __func__);
 			return (-1);
 		}
@@ -796,6 +796,10 @@ ikev2_validate_cert(struct iked_message *msg, size_t offset, size_t left,
 		return (-1);
 	}
 	memcpy(cert, msgbuf + offset, sizeof(*cert));
+	if (cert->cert_type == IKEV2_CERT_NONE) {
+		log_debug("%s: malformed payload: invalid cert type", __func__);
+		return (-1);
+	}
 
 	return (0);
 }
@@ -1008,7 +1012,7 @@ ikev2_pld_nonce(struct iked *env, struct ikev2_payload *pld,
 	print_hex(buf, 0, len);
 
 	if (ikev2_msg_frompeer(msg)) {
-		if (ibuf_length(msg->msg_parent->msg_nonce)) {
+		if (msg->msg_parent->msg_nonce != NULL) {
 			log_info("%s: duplicate NONCE payload", __func__);
 			return (-1);
 		}
@@ -1673,7 +1677,7 @@ ikev2_pld_ef(struct iked *env, struct ikev2_payload *pld,
 		    __func__, frag_num, frag_total);
 		goto done;
 	}
-	elen = ibuf_length(e);
+	elen = ibuf_size(e);
 
 	/* Check new fragmented message */
 	if (sa_frag->frag_arr == NULL) {

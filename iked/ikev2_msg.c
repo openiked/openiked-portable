@@ -1,4 +1,4 @@
-/*	$OpenBSD: ikev2_msg.c,v 1.96 2023/06/28 14:10:24 tobhe Exp $	*/
+/*	$OpenBSD: ikev2_msg.c,v 1.100 2023/08/04 19:06:25 claudio Exp $	*/
 
 /*
  * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
@@ -292,7 +292,7 @@ ikev2_msg_send(struct iked *env, struct iked_message *msg)
 	    betoh32(hdr->ike_msgid),
 	    print_addr(&msg->msg_peer),
 	    print_addr(&msg->msg_local),
-	    ibuf_length(buf), isnatt ? ", NAT-T" : "");
+	    ibuf_size(buf), isnatt ? ", NAT-T" : "");
 
 	if (isnatt) {
 		struct ibuf *new;
@@ -300,7 +300,7 @@ ikev2_msg_send(struct iked *env, struct iked_message *msg)
 			log_debug("%s: failed to set NAT-T", __func__);
 			return (-1);
 		}
-		if (ibuf_cat(new, buf) == -1) {
+		if (ibuf_add_buf(new, buf) == -1) {
 			ibuf_free(new);
 			log_debug("%s: failed to set NAT-T", __func__);
 			return (-1);
@@ -446,9 +446,9 @@ ikev2_msg_encrypt(struct iked *env, struct iked_sa *sa, struct ibuf *src,
 		goto done;
 
 	log_debug("%s: padded length %zu", __func__, ibuf_size(src));
-	print_hex(ibuf_data(src), 0, ibuf_size(src));
+	print_hexbuf(src);
 
-	cipher_setkey(sa->sa_encr, encr->buf, ibuf_length(encr));
+	cipher_setkey(sa->sa_encr, ibuf_data(encr), ibuf_size(encr));
 	cipher_setiv(sa->sa_encr, NULL, 0);	/* XXX ivlen */
 	if (cipher_init_encrypt(sa->sa_encr) == -1) {
 		log_info("%s: error initiating cipher.", __func__);
@@ -466,8 +466,8 @@ ikev2_msg_encrypt(struct iked *env, struct iked_sa *sa, struct ibuf *src,
 
 	/* Add AAD for AEAD ciphers */
 	if (sa->sa_integr->hash_isaead)
-		cipher_aad(sa->sa_encr, ibuf_data(aad),
-		    ibuf_length(aad), &outlen);
+		cipher_aad(sa->sa_encr, ibuf_data(aad), ibuf_size(aad),
+		    &outlen);
 
 	if (cipher_update(sa->sa_encr, ibuf_data(src), encrlen,
 	    ibuf_data(out), &outlen) == -1) {
@@ -489,7 +489,7 @@ ikev2_msg_encrypt(struct iked *env, struct iked_sa *sa, struct ibuf *src,
 
 	log_debug("%s: length %zu, padding %d, output length %zu",
 	    __func__, len + sizeof(pad), pad, ibuf_size(dst));
-	print_hex(ibuf_data(dst), 0, ibuf_size(dst));
+	print_hexbuf(dst);
 
 	ibuf_free(src);
 	ibuf_free(out);
@@ -510,7 +510,7 @@ ikev2_msg_integr(struct iked *env, struct iked_sa *sa, struct ibuf *src)
 	uint8_t			*ptr;
 
 	log_debug("%s: message length %zu", __func__, ibuf_size(src));
-	print_hex(ibuf_data(src), 0, ibuf_size(src));
+	print_hexbuf(src);
 
 	if (sa == NULL ||
 	    sa->sa_encr == NULL ||
@@ -557,7 +557,7 @@ ikev2_msg_integr(struct iked *env, struct iked_sa *sa, struct ibuf *src)
 		goto done;
 	memcpy(ptr, ibuf_data(tmp), integrlen);
 
-	print_hex(ibuf_data(tmp), 0, ibuf_size(tmp));
+	print_hexbuf(tmp);
 
 	ret = 0;
  done:
@@ -580,7 +580,7 @@ ikev2_msg_decrypt(struct iked *env, struct iked_sa *sa,
 	    sa->sa_encr == NULL ||
 	    sa->sa_integr == NULL) {
 		log_debug("%s: invalid SA", __func__);
-		print_hex(ibuf_data(src), 0, ibuf_size(src));
+		print_hexbuf(src);
 		goto done;
 	}
 
@@ -619,22 +619,23 @@ ikev2_msg_decrypt(struct iked *env, struct iked_sa *sa,
 		if ((tmp = ibuf_new(NULL, hash_keylength(sa->sa_integr))) == NULL)
 			goto done;
 
-		hash_setkey(sa->sa_integr, integr->buf, ibuf_length(integr));
+		hash_setkey(sa->sa_integr, ibuf_data(integr),
+		    ibuf_size(integr));
 		hash_init(sa->sa_integr);
 		hash_update(sa->sa_integr, ibuf_data(msg),
 		    ibuf_size(msg) - integrlen);
-		hash_final(sa->sa_integr, tmp->buf, &tmplen);
+		hash_final(sa->sa_integr, ibuf_data(tmp), &tmplen);
 
 		integrdata = ibuf_seek(src, integroff, integrlen);
 		if (integrdata == NULL)
 			goto done;
-		if (memcmp(tmp->buf, integrdata, integrlen) != 0) {
+		if (memcmp(ibuf_data(tmp), integrdata, integrlen) != 0) {
 			log_debug("%s: integrity check failed", __func__);
 			goto done;
 		}
 
 		log_debug("%s: integrity check succeeded", __func__);
-		print_hex(tmp->buf, 0, tmplen);
+		print_hex(ibuf_data(tmp), 0, tmplen);
 
 		ibuf_free(tmp);
 		tmp = NULL;
@@ -648,7 +649,7 @@ ikev2_msg_decrypt(struct iked *env, struct iked_sa *sa,
 		goto done;
 	}
 
-	cipher_setkey(sa->sa_encr, encr->buf, ibuf_length(encr));
+	cipher_setkey(sa->sa_encr, ibuf_data(encr), ibuf_size(encr));
 	cipher_setiv(sa->sa_encr, ibuf_seek(src, ivoff, ivlen), ivlen);
 	if (cipher_init_decrypt(sa->sa_encr) == -1) {
 		log_info("%s: error initiating cipher.", __func__);
@@ -674,13 +675,14 @@ ikev2_msg_decrypt(struct iked *env, struct iked_sa *sa,
 	 * Add additional authenticated data for AEAD ciphers
 	 */
 	if (sa->sa_integr->hash_isaead) {
-		log_debug("%s: AAD length %zu", __func__, ibuf_length(msg) - ibuf_length(src));
-		print_hex(ibuf_data(msg), 0, ibuf_length(msg) - ibuf_length(src));
+		log_debug("%s: AAD length %zu", __func__,
+		    ibuf_size(msg) - ibuf_size(src));
+		print_hex(ibuf_data(msg), 0, ibuf_size(msg) - ibuf_size(src));
 		cipher_aad(sa->sa_encr, ibuf_data(msg),
-		    ibuf_length(msg) - ibuf_length(src), &outlen);
+		    ibuf_size(msg) - ibuf_size(src), &outlen);
 	}
 
-	if ((outlen = ibuf_length(out)) != 0) {
+	if ((outlen = ibuf_size(out)) != 0) {
 		if (cipher_update(sa->sa_encr, ibuf_seek(src, encroff, encrlen),
 		    encrlen, ibuf_data(out), &outlen) == -1) {
 			log_info("%s: error updating cipher.", __func__);
@@ -698,7 +700,7 @@ ikev2_msg_decrypt(struct iked *env, struct iked_sa *sa,
 
 	log_debug("%s: decrypted payload length %zd/%zd padding %d",
 	    __func__, outlen, encrlen, pad);
-	print_hex(ibuf_data(out), 0, ibuf_size(out));
+	print_hexbuf(out);
 
 	/* Strip padding and padding length */
 	if (ibuf_setsize(out, outlen - pad - 1) != 0)
@@ -779,7 +781,7 @@ ikev2_msg_send_encrypt(struct iked *env, struct iked_sa *sa, struct ibuf **ep,
 		log_debug("%s: encryption failed", __func__);
 		goto done;
 	}
-	if (ibuf_cat(buf, e) != 0)
+	if (ibuf_add_buf(buf, e) != 0)
 		goto done;
 
 	/* Add integrity checksum (HMAC) */
@@ -887,7 +889,7 @@ ikev2_send_encrypted_fragments(struct iked *env, struct iked_sa *sa,
 			log_debug("%s: encryption failed", __func__);
 			goto done;
 		}
-		if (ibuf_cat(buf, e) != 0)
+		if (ibuf_add_buf(buf, e) != 0)
 			goto done;
 
 		/* Add integrity checksum (HMAC) */
@@ -899,7 +901,7 @@ ikev2_send_encrypted_fragments(struct iked *env, struct iked_sa *sa,
 		log_debug("%s: Fragment %zu of %zu has size of %zu bytes.",
 		    __func__, frag_num, frag_total,
 		    ibuf_size(buf) - sizeof(*hdr));
-		print_hex(ibuf_data(buf), 0,  ibuf_size(buf));
+		print_hexbuf(buf);
 
 		resp.msg_data = buf;
 		resp.msg_sa = sa;
@@ -961,7 +963,7 @@ ikev2_msg_auth(struct iked *env, struct iked_sa *sa, int response)
 
 	if ((authmsg = ibuf_dup(buf)) == NULL)
 		return (NULL);
-	if (ibuf_cat(authmsg, nonce) != 0)
+	if (ibuf_add_buf(authmsg, nonce) != 0)
 		goto fail;
 
 	if ((hash_setkey(sa->sa_prf, ibuf_data(prfkey),
@@ -985,7 +987,7 @@ ikev2_msg_auth(struct iked *env, struct iked_sa *sa, int response)
 	log_debug("%s: %s auth data length %zu",
 	    __func__, response ? "responder" : "initiator",
 	    ibuf_size(authmsg));
-	print_hex(ibuf_data(authmsg), 0, ibuf_size(authmsg));
+	print_hexbuf(authmsg);
 
 	return (authmsg);
 
