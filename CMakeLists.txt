@@ -82,6 +82,9 @@ endif()
 if (NOT DEFINED CMAKE_INSTALL_MANDIR)
 	set (CMAKE_INSTALL_MANDIR ${CMAKE_INSTALL_PREFIX}/man)
 endif()
+if (NOT DEFINED CMAKE_INSTALL_SBINDIR)
+	set (CMAKE_INSTALL_SBINDIR ${CMAKE_INSTALL_PREFIX}/sbin)
+endif()
 
 check_linker_flag(C "LINKER:-z,now,-z,relro" HAVE_LD_Z)
 
