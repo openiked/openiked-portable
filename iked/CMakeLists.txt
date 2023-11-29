@@ -169,7 +169,7 @@ install(FILES ${CMAKE_SOURCE_DIR}/iked.conf
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/iked.conf.5 DESTINATION ${CMAKE_INSTALL_MANDIR}/man5/)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/iked.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8/)
 if(WITH_APPARMOR)
-	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/iked.apparmor
+	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../linux/iked.apparmor
 		DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/apparmor.d/
 		RENAME usr.sbin.iked)
 endif()
