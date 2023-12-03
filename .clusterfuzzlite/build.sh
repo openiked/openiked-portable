@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 # build project
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCLUSTERFUZZ=ON
+cmake -S . -B build -DCMAKE_BUILD_TYPE=DEBUG -DCLUSTERFUZZ=ON
 cmake --build build
 
 # copy binary and dict to $OUT

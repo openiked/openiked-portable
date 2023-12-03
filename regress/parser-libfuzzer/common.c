@@ -12,6 +12,7 @@
 
 #include <event.h>
 #include <limits.h>
+#include <string.h>
 
 #include "iked.h"
 #include "types.h"
@@ -162,6 +163,7 @@ ssize_t
 ikev2_nat_detection(struct iked *env, struct iked_message *msg,
     void *ptr, size_t len, u_int type, int frompeer)
 {
+	bzero(ptr, len);
 	return (0);
 }
 
