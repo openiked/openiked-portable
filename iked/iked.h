@@ -1,4 +1,4 @@
-/*	$OpenBSD: iked.h,v 1.224 2023/08/11 11:24:55 tobhe Exp $	*/
+/*	$OpenBSD: iked.h,v 1.225 2024/01/15 15:29:00 tobhe Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -778,6 +778,7 @@ enum natt_mode {
 
 struct iked_static {
 	uint64_t		 st_alive_timeout;
+	int			 st_cert_partial_chain;
 	int			 st_enforcesingleikesa;
 	uint8_t			 st_frag;	/* fragmentation */
 	uint8_t			 st_mobike;	/* MOBIKE */
@@ -797,6 +798,7 @@ struct iked {
 	struct iked_static		 sc_static;
 
 #define sc_alive_timeout	sc_static.st_alive_timeout
+#define sc_cert_partial_chain	sc_static.st_cert_partial_chain
 #define sc_enforcesingleikesa	sc_static.st_enforcesingleikesa
 #define sc_frag			sc_static.st_frag
 #define sc_mobike		sc_static.st_mobike
@@ -841,7 +843,6 @@ struct iked {
 	struct iked_addrpool		 sc_addrpool;
 	struct iked_addrpool6		 sc_addrpool6;
 
-	int				 sc_cert_partial_chain;
 #ifdef WITH_APPARMOR
 	int				 sc_apparmor;
 #endif
@@ -947,8 +948,6 @@ int	 config_setkeys(struct iked *);
 int	 config_getkey(struct iked *, struct imsg *);
 int	 config_setstatic(struct iked *);
 int	 config_getstatic(struct iked *, struct imsg *);
-int	 config_setcertpartialchain(struct iked *);
-int	 config_getcertpartialchain(struct iked *, struct imsg *);
 
 /* policy.c */
 void	 policy_init(struct iked *);
