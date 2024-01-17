@@ -1,4 +1,4 @@
-/*	$OpenBSD: config.c,v 1.94 2024/01/15 15:29:00 tobhe Exp $	*/
+/*	$OpenBSD: config.c,v 1.95 2024/01/17 08:25:02 claudio Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -633,16 +633,16 @@ config_getsocket(struct iked *env, struct imsg *imsg,
 {
 	struct iked_socket	*sock, **sock0 = NULL, **sock1 = NULL;
 
-	log_debug("%s: received socket fd %d", __func__, imsg->fd);
-
 	if ((sock = calloc(1, sizeof(*sock))) == NULL)
 		fatal("config_getsocket: calloc");
 
 	IMSG_SIZE_CHECK(imsg, &sock->sock_addr);
 
 	memcpy(&sock->sock_addr, imsg->data, sizeof(sock->sock_addr));
-	sock->sock_fd = imsg->fd;
+	sock->sock_fd = imsg_get_fd(imsg);
 	sock->sock_env = env;
+
+	log_debug("%s: received socket fd %d", __func__, sock->sock_fd);
 
 	switch (sock->sock_addr.ss_family) {
 	case AF_INET:
@@ -687,8 +687,10 @@ config_setpfkey(struct iked *env)
 int
 config_getpfkey(struct iked *env, struct imsg *imsg)
 {
-	log_debug("%s: received pfkey fd %d", __func__, imsg->fd);
-	ipsec_init(env, imsg->fd);
+	int fd = imsg_get_fd(imsg);
+
+	log_debug("%s: received pfkey fd %d", __func__, fd);
+	ipsec_init(env, fd);
 	return (0);
 }
 
