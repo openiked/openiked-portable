@@ -328,12 +328,13 @@ void
 vroute_removeroute(struct iked *env, struct sockaddr *dest)
 {
 	struct iked_vroute_sc	*ivr = env->sc_vroute;
-	struct vroute_route	*route;
+	struct vroute_route	*route, *troute;
 
-	TAILQ_FOREACH(route, &ivr->ivr_routes, vr_entry) {
+	TAILQ_FOREACH_SAFE(route, &ivr->ivr_routes, vr_entry, troute) {
 		if (sockaddr_cmp(dest, (struct sockaddr *)&route->vr_dest, -1))
 			continue;
 		TAILQ_REMOVE(&ivr->ivr_routes, route, vr_entry);
+		free(route);
 	}
 }
 
@@ -393,9 +394,9 @@ vroute_removeaddr(struct iked *env, int ifidx, struct sockaddr *addr,
     struct sockaddr *mask)
 {
 	struct iked_vroute_sc	*ivr = env->sc_vroute;
-	struct vroute_addr	*vaddr;
+	struct vroute_addr	*vaddr, *tvaddr;
 
-	TAILQ_FOREACH(vaddr, &ivr->ivr_addrs, va_entry) {
+	TAILQ_FOREACH_SAFE(vaddr, &ivr->ivr_addrs, va_entry, tvaddr) {
 		if (sockaddr_cmp(addr, (struct sockaddr *)&vaddr->va_addr, -1))
 			continue;
 		if (sockaddr_cmp(mask, (struct sockaddr *)&vaddr->va_mask, -1))
@@ -403,6 +404,7 @@ vroute_removeaddr(struct iked *env, int ifidx, struct sockaddr *addr,
 		if (ifidx != vaddr->va_ifidx)
 			continue;
 		TAILQ_REMOVE(&ivr->ivr_addrs, vaddr, va_entry);
+		free(vaddr);
 	}
 }
 
