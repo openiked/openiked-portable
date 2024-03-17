@@ -28,7 +28,7 @@ Binary packages for OpenIKED are available for the package managers of various o
 * [Fedora](https://packages.fedoraproject.org/pkgs/openiked/openiked/index.html)
 * [Ubuntu](https://launchpad.net/ubuntu/+source/openiked)
 * [Arch Linux User Repository (AUR)](https://aur.archlinux.org/packages/openiked)
-* [openSUSE](https://build.opensuse.org/package/show/home:Alexander_Naumov:openiked/openiked-portable)
+* [openSUSE and SUSE Linux Enterprise](https://build.opensuse.org/package/show/network:vpn/openiked)
 * [MacPorts](https://ports.macports.org/port/openiked/)
 * [Homebrew](https://formulae.brew.sh/formula/openiked)
 
