@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # script to run the parser-fuzzer for 5 minutes with the right options
+# use repo github.com/openiked/openiked-fuzzing/corpus/test_libfuzzer as corpus for faster results
 
 # ASAN-option to help finding the source of memory leaks
 export ASAN_OPTIONS=fast_unwind_on_malloc=0

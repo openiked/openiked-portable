@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenIKED IKEv2 daemon
+Documentation=man:iked(8)
+Requires=network-online.target
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/iked
+ExecReload=/usr/sbin/ikectl reload
+
+[Install]
+WantedBy=multi-user.target

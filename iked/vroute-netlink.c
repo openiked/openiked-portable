@@ -109,15 +109,6 @@ vroute_init(struct iked *env)
 	    NETLINK_ROUTE)) == -1)
 		fatal("%s: failed to create netlink socket", __func__);
 
-#ifdef WITH_SYSTEMD
-	int r;
-	r = sd_bus_open_system(&ivr->ivr_bus);
-	if (r < 0) {
-		log_warn("%s: sd_bus_open_system", __func__);
-		ivr->ivr_bus = NULL;
-	}
-#endif
-
 	TAILQ_INIT(&ivr->ivr_addrs);
 	TAILQ_INIT(&ivr->ivr_dnss);
 	TAILQ_INIT(&ivr->ivr_routes);
@@ -328,12 +319,13 @@ void
 vroute_removeroute(struct iked *env, struct sockaddr *dest)
 {
 	struct iked_vroute_sc	*ivr = env->sc_vroute;
-	struct vroute_route	*route;
+	struct vroute_route	*route, *troute;
 
-	TAILQ_FOREACH(route, &ivr->ivr_routes, vr_entry) {
+	TAILQ_FOREACH_SAFE(route, &ivr->ivr_routes, vr_entry, troute) {
 		if (sockaddr_cmp(dest, (struct sockaddr *)&route->vr_dest, -1))
 			continue;
 		TAILQ_REMOVE(&ivr->ivr_routes, route, vr_entry);
+		free(route);
 	}
 }
 
@@ -393,9 +385,9 @@ vroute_removeaddr(struct iked *env, int ifidx, struct sockaddr *addr,
     struct sockaddr *mask)
 {
 	struct iked_vroute_sc	*ivr = env->sc_vroute;
-	struct vroute_addr	*vaddr;
+	struct vroute_addr	*vaddr, *tvaddr;
 
-	TAILQ_FOREACH(vaddr, &ivr->ivr_addrs, va_entry) {
+	TAILQ_FOREACH_SAFE(vaddr, &ivr->ivr_addrs, va_entry, tvaddr) {
 		if (sockaddr_cmp(addr, (struct sockaddr *)&vaddr->va_addr, -1))
 			continue;
 		if (sockaddr_cmp(mask, (struct sockaddr *)&vaddr->va_mask, -1))
@@ -403,6 +395,7 @@ vroute_removeaddr(struct iked *env, int ifidx, struct sockaddr *addr,
 		if (ifidx != vaddr->va_ifidx)
 			continue;
 		TAILQ_REMOVE(&ivr->ivr_addrs, vaddr, va_entry);
+		free(vaddr);
 	}
 }
 
@@ -743,11 +736,22 @@ int
 vroute_dodns(struct iked *env, int add, unsigned int ifindex)
 {
 #ifdef WITH_SYSTEMD
+	struct iked_vroute_sc *ivr = env->sc_vroute;
 	const char *destination = "org.freedesktop.resolve1";
 	const char *path = "/org/freedesktop/resolve1";
 	const char *interface = "org.freedesktop.resolve1.Manager";
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int ret;
+
+	if (ivr->ivr_bus != NULL) {
+		log_warnx("%s: vr_bus already set, internal error", __func__);
+		return (0);
+	}
+	if (sd_bus_open_system(&ivr->ivr_bus) < 0) {
+		log_warn("%s: sd_bus_open_system failed", __func__);
+		ivr->ivr_bus = NULL;
+		return (0);
+	}
 
 	ret = vroute_dbus_dns(env, ifindex, &error, add,
 	    destination, path, interface);
@@ -778,6 +782,9 @@ vroute_dodns(struct iked *env, int add, unsigned int ifindex)
 		    error.name, error.message);
 		sd_bus_error_free(&error);
 	}
+
+	sd_bus_flush_close_unref(ivr->ivr_bus);
+	ivr->ivr_bus = NULL;
 #endif
 	return (0);
 }
