@@ -33,8 +33,31 @@ jobs:
         with:
           logfile: ${{ github.workspace }}/build/compile_commands.json
 
+      - name: Archive
+        shell: sh
+        run: |
+          tar --directory ${{ steps.codechecker.outputs.result-html-dir }} \
+          cvf "$RUNNER_TEMP/artifact.tar"
+
       # Upload the results to the CI.
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-pages-artifact@v4
         with:
           name: "CodeChecker Bug Reports"
-          path: ${{ steps.codechecker.outputs.result-html-dir }}
+          path: ${{ runner.temp }}/artifact.tar
+          if-no-files-fount: error
+
+  deploy:
+    needs: check
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    run: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
