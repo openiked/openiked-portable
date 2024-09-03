@@ -34,7 +34,7 @@ jobs:
           logfile: ${{ github.workspace }}/build/compile_commands.json
 
       # Upload the results to the CI.
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ steps.codechecker.outputs.result-html-dir }}
 
