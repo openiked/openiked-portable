@@ -1,4 +1,4 @@
-/*	$OpenBSD: parse.y,v 1.146 2024/04/25 14:24:54 jsg Exp $	*/
+/*	$OpenBSD: parse.y,v 1.148 2024/11/04 02:44:28 dlg Exp $	*/
 
 /*
  * Copyright (c) 2019-2021 Tobias Heider <tobhe@openbsd.org>
@@ -387,7 +387,7 @@ int			 create_ike(char *, int, struct ipsec_addr_wrap *,
 			    int, struct ipsec_hosts *,
 			    struct ipsec_hosts *, struct ipsec_mode *,
 			    struct ipsec_mode *, uint8_t,
-			    uint8_t, char *, char *,
+			    unsigned int, char *, char *,
 			    uint32_t, struct iked_lifetime *,
 			    struct iked_auth *, struct ipsec_filters *,
 			    struct ipsec_addr_wrap *, char *);
@@ -413,7 +413,7 @@ struct ipsec_addr_wrap	*iftab;
 typedef struct {
 	union {
 		int64_t			 number;
-		uint8_t			 ikemode;
+		unsigned int		 ikemode;
 		uint8_t			 dir;
 		uint8_t			 satype;
 		char			*string;
@@ -455,6 +455,7 @@ typedef struct {
 %token	TOLERATE MAXAGE DYNAMIC
 %token	CERTPARTIALCHAIN
 %token	REQUEST IFACE
+%token  NATT
 %token	<v.string>		STRING
 %token	<v.number>		NUMBER
 %type	<v.string>		string
@@ -470,7 +471,8 @@ typedef struct {
 %type	<v.id>			id
 %type	<v.transforms>		transforms
 %type	<v.filters>		filters
-%type	<v.ikemode>		ikeflags ikematch ikemode ipcomp tmode
+%type	<v.ikemode>		ikeflags
+%type	<v.ikemode>		ikematch ikemode ipcomp tmode natt_force
 %type	<v.ikeauth>		ikeauth
 %type	<v.ikekey>		keyspec
 %type	<v.mode>		ike_sas child_sas
@@ -1019,7 +1021,9 @@ child_sa	: CHILDSA	{
 		}
 		;
 
-ikeflags	: ikematch ikemode ipcomp tmode { $$ = $1 | $2 | $3 | $4; }
+ikeflags	: ikematch ikemode ipcomp tmode natt_force {
+			$$ = $1 | $2 | $3 | $4 | $5;
+		}
 		;
 
 ikematch	: /* empty */			{ $$ = 0; }
@@ -1040,6 +1044,10 @@ ipcomp		: /* empty */			{ $$ = 0; }
 tmode		: /* empty */			{ $$ = 0; }
 		| TUNNEL			{ $$ = 0; }
 		| TRANSPORT			{ $$ = IKED_POLICY_TRANSPORT; }
+		;
+
+natt_force	: /* empty */			{ $$ = 0; }
+		| NATT				{ $$ = IKED_POLICY_NATT_FORCE; }
 		;
 
 ikeauth		: /* empty */			{
@@ -1390,6 +1398,7 @@ lookup(char *s)
 		{ "maxage",		MAXAGE },
 		{ "mobike",		MOBIKE },
 		{ "name",		NAME },
+		{ "natt",		NATT },
 		{ "noenforcesingleikesa",	NOENFORCESINGLEIKESA },
 		{ "noesn",		NOESN },
 		{ "nofragmentation",	NOFRAGMENTATION },
@@ -2494,7 +2503,7 @@ create_ike(char *name, int af, struct ipsec_addr_wrap *ipproto,
     int rdomain, struct ipsec_hosts *hosts,
     struct ipsec_hosts *peers, struct ipsec_mode *ike_sa,
     struct ipsec_mode *ipsec_sa, uint8_t saproto,
-    uint8_t flags, char *srcid, char *dstid,
+    unsigned int flags, char *srcid, char *dstid,
     uint32_t ikelifetime, struct iked_lifetime *lt,
     struct iked_auth *authtype, struct ipsec_filters *filter,
     struct ipsec_addr_wrap *ikecfg, char *iface)
