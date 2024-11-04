@@ -88,6 +88,9 @@ print_policy(struct iked_policy *pol)
 	else
 		print_verbose(" tunnel");
 
+	if (pol->pol_flags & IKED_POLICY_NATT_FORCE)
+		print_verbose(" natt");
+
 	print_verbose(" %s", print_xf(pol->pol_saproto, 0, saxfs));
 
 	if (pol->pol_nipproto > 0) {
