@@ -20,6 +20,9 @@
 #define htobe64(x) OSSwapHostToBigInt64(x)
 #define letoh64(x) OSSwapLittleToHostInt64(x)
 #define betoh64(x) OSSwapBigToHostInt64(x)
+#define be16toh betoh16
+#define be32toh betoh32
+#define be64toh betoh64
 #endif /* __APPLE__ && !HAVE_ENDIAN_H */
 
 #if defined(_WIN32) && !defined(HAVE_ENDIAN_H)
@@ -30,6 +33,9 @@
 #define htobe32(x) ntohl((x))
 #define betoh64(x) ntohll((x))
 #define htobe64(x) ntohll((x))
+#define be16toh betoh16
+#define be32toh betoh32
+#define be64toh betoh64
 #endif /* _WIN32 && !HAVE_ENDIAN_H */
 
 #ifdef __linux__
