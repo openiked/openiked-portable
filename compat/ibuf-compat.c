@@ -1,4 +1,4 @@
-/*      $OpenBSD: imsg-buffer.c,v 1.16 2023/06/19 17:19:50 claudio Exp $        */
+/*      $OpenBSD: imsg-buffer.c,v 1.19 2024/08/26 13:57:34 claudio Exp $        */
 
 /*
  * Copyright (c) 2003, 2004 Henning Brauer <henning@openbsd.org>
@@ -59,6 +59,7 @@ ibuf_add_zero(struct ibuf *buf, size_t len)
 
 	if ((b = ibuf_reserve(buf, len)) == NULL)
 		return (-1);
+	memset(b, 0, len);
 	return (0);
 }
 #endif /* !defined(HAVE_IBUF_ADD_ZERO) */
