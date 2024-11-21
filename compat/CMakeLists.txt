@@ -42,7 +42,7 @@ endif()
 if(NOT HAVE_GETOPT)
 	list(APPEND SRCS ${IKED_COMPAT}/getopt_long.c)
 endif()
-if(NOT HAVE_IMSG_H)
+if(NOT HAVE_IMSG_H OR NOT HAVE_MSGBUF_NEW_READER)
 	list(APPEND SRCS
 		# imsg
 		${IKED_COMPAT}/imsg.c
@@ -72,9 +72,6 @@ if(NOT HAVE_REALLOCARRAY)
 endif()
 if(NOT HAVE_VIS)
 	list(APPEND SRCS ${IKED_COMPAT}/vis.c)
-endif()
-if(NOT HAVE_IBUF_ADD_BUF OR NOT HAVE_IBUF_ADD_ZERO OR NOT HAVE_IBUF_DATA)
-	list(APPEND SRCS ${IKED_COMPAT}/ibuf-compat.c)
 endif()
 
 set(CFLAGS)
