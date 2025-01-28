@@ -23,7 +23,8 @@ enum group_type {
 	GROUP_MODP		= 0,
 	GROUP_ECP		= 1,
 	GROUP_CURVE25519	= 2,
-	GROUP_SNTRUP761X25519	= 3
+	GROUP_SNTRUP761X25519	= 3,
+	GROUP_MLKEM768X25519   = 4
 };
 
 struct group_id {
@@ -50,8 +51,10 @@ struct dh_group {
 	int		(*secretlen)(struct dh_group *);
 	int		(*exchange)(struct dh_group *, uint8_t *);
 	int		(*exchange2)(struct dh_group *, struct ibuf **, struct ibuf *);
+	int             (*exchange3)(struct dh_group *, struct ibuf **, struct ibuf *);
 	int		(*shared)(struct dh_group *, uint8_t *, uint8_t *);
 	int		(*shared2)(struct dh_group *, struct ibuf **, struct ibuf *);
+	int             (*shared3)(struct dh_group *, struct ibuf **, struct ibuf *);
 };
 
 #define DH_MAXSZ	1024	/* 8192 bits */
