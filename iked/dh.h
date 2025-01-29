@@ -45,16 +45,15 @@ struct dh_group {
 	void		*ec;
 	void		*curve25519;
 	void		*kemsx;
+	void		*kemmx;
 
 	int		(*init)(struct dh_group *);
 	int		(*getlen)(struct dh_group *);
 	int		(*secretlen)(struct dh_group *);
 	int		(*exchange)(struct dh_group *, uint8_t *);
 	int		(*exchange2)(struct dh_group *, struct ibuf **, struct ibuf *);
-	int             (*exchange3)(struct dh_group *, struct ibuf **, struct ibuf *);
 	int		(*shared)(struct dh_group *, uint8_t *, uint8_t *);
 	int		(*shared2)(struct dh_group *, struct ibuf **, struct ibuf *);
-	int             (*shared3)(struct dh_group *, struct ibuf **, struct ibuf *);
 };
 
 #define DH_MAXSZ	1024	/* 8192 bits */
