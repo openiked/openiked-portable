@@ -36,7 +36,7 @@
 #define KRML_MUSTINLINE inline
 #define KRML_NOINLINE __attribute__((noinline, unused))
 #define KRML_HOST_EPRINTF(...)
-#define KRML_HOST_EXIT(x) fatal_f("internal error")
+#define KRML_HOST_EXIT(x) exit(-1)
 
 /* from libcrux/libcrux-ml-kem/cg/eurydice_glue.h */
 /*
