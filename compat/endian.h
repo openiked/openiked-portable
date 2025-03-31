@@ -20,6 +20,8 @@
 #define htobe64(x) OSSwapHostToBigInt64(x)
 #define letoh64(x) OSSwapLittleToHostInt64(x)
 #define betoh64(x) OSSwapBigToHostInt64(x)
+#define le64toh(x) OSSwapLittleToHostInt64(x)
+#define le32toh(x) OSSwapLittleToHostInt32(x)
 #endif /* __APPLE__ && !HAVE_ENDIAN_H */
 
 #if defined(_WIN32) && !defined(HAVE_ENDIAN_H)
@@ -30,6 +32,17 @@
 #define htobe32(x) ntohl((x))
 #define betoh64(x) ntohll((x))
 #define htobe64(x) ntohll((x))
+# if BYTE_ORDER == LITTLE_ENDIAN
+#  define le32toh(x) (x)
+#  define le64toh(x) (x)
+#  define htole64(x) (x)
+# elif BYTE_ORDER == BIG_ENDIAN
+#  define le32toh(x) __builtin_bswap32(x)
+#  define le64toh(x) __builtin_bswap64(x)
+#  define htole64(x) __builtin_bswap64(x)
+# else
+#  error byte order not supported
+# endif
 #endif /* _WIN32 && !HAVE_ENDIAN_H */
 
 #ifdef __linux__
