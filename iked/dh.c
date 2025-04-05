@@ -36,6 +36,9 @@
 
 #include "dh.h"
 #include "iked.h"
+
+#include <stdbool.h>
+#include "libcrux_mlkem768_sha3.h"
 #include "crypto_api.h"
 
 int	dh_init(struct dh_group *);
@@ -89,6 +92,18 @@ struct kemsx_key {
 	uint8_t		kemkey[crypto_kem_sntrup761_BYTES];
 	uint8_t		secret[crypto_kem_sntrup761_SECRETKEYBYTES];
 	uint8_t		public[crypto_kem_sntrup761_PUBLICKEYBYTES];
+	uint8_t		initiator;
+};
+
+/* MLKEM768 with 25519 */
+int	kemmx_init(struct dh_group *);
+int	kemmx_getlen(struct dh_group *);
+int	kemmx_create_exchange2(struct dh_group *, struct ibuf **, struct ibuf *);
+int	kemmx_create_shared2(struct dh_group *, struct ibuf **, struct ibuf *);
+
+struct kemmx_key {
+	uint8_t		kemkey[LIBCRUX_ML_KEM_CONSTANTS_SHARED_SECRET_SIZE];
+	struct		libcrux_mlkem768_keypair keypair;
 	uint8_t		initiator;
 };
 
@@ -271,10 +286,8 @@ const struct group_id ike_groups[] = {
 	{ GROUP_CURVE25519, 31, CURVE25519_SIZE * 8 },
 	/* "Private use" extensions */
 	/* PQC KEM */
-	{ GROUP_SNTRUP761X25519, 1035,
-	   (MAXIMUM(crypto_kem_sntrup761_PUBLICKEYBYTES,
-	        crypto_kem_sntrup761_CIPHERTEXTBYTES) +
-	    CURVE25519_SIZE) * 8 }
+	{ GROUP_SNTRUP761X25519, 1035, 0 },
+	{ GROUP_MLKEM768X25519, 1036, 0 },
 };
 
 void
@@ -295,6 +308,7 @@ group_free(struct dh_group *group)
 		EC_KEY_free(group->ec);
 	freezero(group->curve25519, sizeof(struct curve25519_key));
 	freezero(group->kemsx, sizeof(struct kemsx_key));
+	freezero(group->kemmx, sizeof(struct kemmx_key));
 	group->spec = NULL;
 	free(group);
 }
@@ -339,6 +353,12 @@ group_get(uint32_t id)
 		group->getlen = kemsx_getlen;
 		group->exchange2 = kemsx_create_exchange2;
 		group->shared2 = kemsx_create_shared2;
+		break;
+	case GROUP_MLKEM768X25519:
+		group->init = kemmx_init;
+		group->getlen = kemmx_getlen;
+		group->exchange2 = kemmx_create_exchange2;
+		group->shared2 = kemmx_create_shared2;
 		break;
 	default:
 		group_free(group);
@@ -887,4 +907,167 @@ kemsx_create_shared2(struct dh_group *group, struct ibuf **sharedp,
 	EVP_MD_CTX_free(ctx);
 	*sharedp = buf;
 	return (0);
+}
+
+/* combine mlkem768 with 25519 */
+
+int
+kemmx_init(struct dh_group *group)
+{
+	/* delayed until kemmx_create_exchange2 */
+	return (0);
+}
+
+int
+kemmx_getlen(struct dh_group *group)
+{
+	return (0);
+}
+
+int
+kemmx_create_exchange2(struct dh_group *group, struct ibuf **bufp,
+    struct ibuf *iexchange)
+{
+	struct kemmx_key	*kemmx;
+	struct curve25519_key	*curve25519;
+	struct ibuf		*buf = NULL;
+	u_char			 enc_seed[LIBCRUX_ML_KEM_ENC_PRNG_LEN];
+	u_char			 key_seed[LIBCRUX_ML_KEM_KEY_PAIR_PRNG_LEN];
+	u_char			*cp, *pk;
+	size_t			 have, need;
+
+	if (ec25519_init(group) == -1)
+		return (-1);
+	if (group->curve25519 == NULL)
+                return (-1);
+	if ((kemmx = calloc(1, sizeof(*kemmx))) == NULL)
+		return (-1);
+	group->kemmx = kemmx;
+
+	if (iexchange == NULL) {
+
+		kemmx->initiator = 1;
+
+		arc4random_buf(key_seed, sizeof(key_seed));
+		kemmx->keypair = libcrux_ml_kem_mlkem768_portable_generate_key_pair(key_seed);
+		explicit_bzero(key_seed, sizeof(key_seed));
+
+		/* output */
+		need = sizeof(kemmx->keypair.pk.value) + CURVE25519_SIZE;
+		buf = ibuf_new(NULL, need);
+		if (buf == NULL)
+			return -1;
+		cp = ibuf_data(buf);
+		memcpy(cp, kemmx->keypair.pk.value, sizeof(kemmx->keypair.pk.value));
+		cp += sizeof(kemmx->keypair.pk.value);
+	} else {
+		struct libcrux_mlkem768_pk kempub;
+		struct libcrux_mlkem768_enc_result enc;
+
+		kemmx->initiator = 0;
+		/* input */
+		have = ibuf_size(iexchange);
+		need = sizeof(kempub.value) + CURVE25519_SIZE;
+		if (have != need)
+			return -1;
+
+		/* check public key validity */
+		pk = ibuf_data(iexchange);
+		memcpy(kempub.value, pk, sizeof(kempub.value));
+		if (!libcrux_ml_kem_mlkem768_portable_validate_public_key(&kempub))
+			return -1;
+
+		/* output */
+		need = sizeof(enc.fst.value) + CURVE25519_SIZE;
+		buf = ibuf_new(NULL, need);
+		if (buf == NULL)
+			return -1;
+		cp = ibuf_data(buf);
+
+		/* generate and encrypt KEM key with client key */
+		arc4random_buf(enc_seed, sizeof(enc_seed));
+		enc = libcrux_ml_kem_mlkem768_portable_encapsulate(&kempub, enc_seed);
+		explicit_bzero(&enc_seed, sizeof(enc_seed));
+		memcpy(kemmx->kemkey, enc.snd, sizeof(kemmx->kemkey));
+		memcpy(cp, enc.fst.value, sizeof(enc.fst.value));
+		cp += sizeof(enc.fst.value);
+
+		explicit_bzero(&enc, sizeof(enc));
+	}
+	curve25519 = group->curve25519;
+	memcpy(cp, curve25519->public, CURVE25519_SIZE);
+	*bufp = buf;
+	return (0);
+}
+
+int
+kemmx_create_shared2(struct dh_group *group, struct ibuf **sharedp,
+    struct ibuf *exchange)
+{
+	struct curve25519_key	*curve25519 = group->curve25519;
+	struct kemmx_key	*kemmx = group->kemmx;
+	struct ibuf		*buf = NULL;
+	EVP_MD_CTX		*ctx = NULL;
+	uint8_t			*cp;
+	uint8_t			*kempub;
+	uint8_t			 shared[CURVE25519_SIZE];
+	size_t			 have, need;
+	u_int			 len;
+	int			 ret = -1;
+
+	*sharedp = NULL;
+	if (kemmx == NULL)
+		return (-1);
+	if (exchange == NULL)
+		return (-1);
+
+	have = ibuf_size(exchange);
+	cp = ibuf_data(exchange);
+	if (kemmx->initiator) {
+		struct libcrux_mlkem768_ciphertext ct = { 0 };
+
+		/* we generate public key */
+		kempub = kemmx->keypair.pk.value;
+		/* input */
+		need = sizeof(ct.value) + CURVE25519_SIZE;
+		if (have != need)
+			return (-1);
+
+		memcpy(ct.value, cp, sizeof(ct.value));
+		libcrux_ml_kem_mlkem768_portable_decapsulate(&kemmx->keypair.sk,
+		    &ct, kemmx->kemkey);
+
+		cp += sizeof(ct.value);
+		/* cp points to peer ec pubkey */
+	} else {
+		/* peer sends public key */
+		kempub = cp;
+		/* input, should have been checked before */
+		need = sizeof(kemmx->keypair.pk.value) + CURVE25519_SIZE;
+		if (have != need)
+			return (-1);
+		cp += sizeof(kemmx->keypair.pk.value);
+		/* cp points to peer ec pubkey */
+	}
+	crypto_scalarmult_curve25519(shared, curve25519->secret, cp);
+
+	/* result is hash of concatenation of KEM key and DH shared secret */
+	len = SHA256_DIGEST_LENGTH;
+	buf = ibuf_new(NULL, len);
+	if (buf == NULL)
+		goto done;
+	if ((ctx = EVP_MD_CTX_new()) == NULL ||
+	    EVP_DigestInit_ex(ctx, EVP_sha256(), NULL) != 1 ||
+	    EVP_DigestUpdate(ctx, kempub, sizeof(kemmx->keypair.pk.value)) != 1 ||
+	    EVP_DigestUpdate(ctx, kemmx->kemkey, sizeof(kemmx->kemkey)) != 1 ||
+	    EVP_DigestUpdate(ctx, shared, sizeof(shared)) != 1 ||
+	    EVP_DigestFinal_ex(ctx, ibuf_data(buf), &len) != 1)
+		goto done;
+	*sharedp = buf;
+	buf = NULL;
+	ret = 0;
+ done:
+	EVP_MD_CTX_free(ctx);
+	ibuf_free(buf);
+	return (ret);
 }

@@ -254,6 +254,7 @@ extern struct iked_constmap ikev2_xformauth_map[];
 #define IKEV2_XFORMDH_BRAINPOOL_P512R1	30	/* RFC6954 */
 #define IKEV2_XFORMDH_CURVE25519	31	/* RFC8031 */
 #define IKEV2_XFORMDH_X_SNTRUP761X25519	1035	/* private */
+#define IKEV2_XFORMDH_X_MLKEM768X25519	1036	/* private */
 
 extern struct iked_constmap ikev2_xformdh_map[];
 

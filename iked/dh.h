@@ -23,7 +23,8 @@ enum group_type {
 	GROUP_MODP		= 0,
 	GROUP_ECP		= 1,
 	GROUP_CURVE25519	= 2,
-	GROUP_SNTRUP761X25519	= 3
+	GROUP_SNTRUP761X25519	= 3,
+	GROUP_MLKEM768X25519	= 4
 };
 
 struct group_id {
@@ -44,6 +45,7 @@ struct dh_group {
 	void		*ec;
 	void		*curve25519;
 	void		*kemsx;
+	void		*kemmx;
 
 	int		(*init)(struct dh_group *);
 	int		(*getlen)(struct dh_group *);
