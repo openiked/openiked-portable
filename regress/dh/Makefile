@@ -4,7 +4,7 @@
 
 PROG=		dhtest
 SRCS=		dh.c dhtest.c smult_curve25519_ref.c imsg_util.c
-SRCS+=		sntrup761.c crypto_hash.c
+SRCS+=		sntrup761.c libcrux_mlkem768_sha3.c crypto_hash.c
 TOPSRC=		${.CURDIR}/../../../../sbin/iked
 TOPOBJ!=	cd ${TOPSRC}; printf "all:\n\t@pwd\n" |${MAKE} -f-
 .PATH:		${TOPSRC} ${TOPOBJ}
