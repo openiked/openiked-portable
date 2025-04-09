@@ -16,6 +16,7 @@ profile iked /usr/sbin/iked {
   include <abstractions/nameservice>
   /etc/iked.conf r,
   /etc/iked/** r,
+  /run/iked.sock rw,
 
   # systemd-resolved
   dbus send
