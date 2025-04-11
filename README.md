@@ -48,10 +48,7 @@ make
 # install
 make install
 ```
-A few additional setup steps are required to create the intial configuration files, key material and system users.
-The easiest way to do this is running the setup scripts included in the source repository.
-
-```
-./setup_config.sh
-./useradd.sh
-```
+A few additional setup steps are required to create the required system group
+and user.
+The easiest way to do this is running the `useradd.sh script included in the
+source repository.
