@@ -134,7 +134,7 @@ if(HAVE_NET_IPSEC_H)
 	add_definitions(-DHAVE_NET_IPSEC_H)
 endif()
 
-check_include_files("netinet6/ipsec.h" HAVE_NETINET6_IPSEC_H)
+check_include_files("sys/types.h;netinet6/ipsec.h" HAVE_NETINET6_IPSEC_H)
 if(HAVE_NETINET6_IPSEC_H)
 	add_definitions(-DHAVE_NETINET6_IPSEC_H)
 endif()
