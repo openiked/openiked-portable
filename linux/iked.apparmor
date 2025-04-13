@@ -16,7 +16,6 @@ profile iked /usr/sbin/iked {
   include <abstractions/nameservice>
   /etc/iked.conf r,
   /etc/iked/** r,
-  /run/iked.sock rw,
 
   # systemd-resolved
   unix bind type=stream addr=@*/bus/iked/system,
@@ -89,6 +88,7 @@ profile iked /usr/sbin/iked {
     # privsep
     signal (receive) peer=iked,
     unix (send, receive) type=stream peer=(label=iked),
+    /run/iked.sock rw,
 
     # ikectl control sock
     network unix raw,
