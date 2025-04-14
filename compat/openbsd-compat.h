@@ -10,6 +10,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #if !defined(HAVE_STRLCAT)
 size_t strlcat(char *, const char *, size_t);
@@ -99,6 +100,10 @@ int getdtablecount(void);
 
 #if !defined(HAVE_USLEEP)
 int usleep(unsigned int x);
+#endif
+
+#if !defined(HAVE_MEMSTREAM)
+FILE *open_memstream(char **ptr, size_t *sizeloc);
 #endif
 
 #ifdef HAVE_SOCKADDR_SA_LEN
