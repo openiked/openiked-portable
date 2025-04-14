@@ -78,6 +78,9 @@ endif()
 if(NOT HAVE_VIS)
 	list(APPEND SRCS ${IKED_COMPAT}/vis.c)
 endif()
+if(NOT HAVE_MEMSTREAM)
+	list(APPEND SRCS ${IKED_COMPAT}/memstream.c)
+endif()
 
 set(CFLAGS)
 list(APPEND CFLAGS
