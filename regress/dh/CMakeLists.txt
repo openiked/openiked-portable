@@ -19,6 +19,7 @@ list(APPEND SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/../../iked/dh.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../../iked/smult_curve25519_ref.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../../iked/sntrup761.c
+	${CMAKE_CURRENT_SOURCE_DIR}/../../iked/libcrux_mlkem768_sha3.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../../iked/imsg_util.c
 )
 
