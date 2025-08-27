@@ -441,10 +441,17 @@ proc_open(struct privsep *ps, int src, int dst)
 
 			pa = &ps->ps_pipes[src][i];
 			pb = &ps->ps_pipes[dst][j];
+#if defined(__APPLE__)
+			if (socketpair(AF_UNIX,
+			    SOCK_STREAM,
+			    PF_UNSPEC, fds) == -1)
+				fatal("%s: socketpair", __func__);
+#else
 			if (socketpair(AF_UNIX,
 			    SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
 			    PF_UNSPEC, fds) == -1)
 				fatal("%s: socketpair", __func__);
+#endif
 
 			pa->pp_pipes[dst][j] = fds[0];
 			pb->pp_pipes[src][i] = fds[1];
