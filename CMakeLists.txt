@@ -350,6 +350,11 @@ if(HAVE_MEMMEM)
 	add_definitions(-DHAVE_MEMMEM)
 endif()
 
+check_symbol_exists(open_memstream stdio.h HAVE_MEMSTREAM)
+if(HAVE_MEMSTREAM)
+	add_definitions(-DHAVE_MEMSTREAM)
+endif()
+
 check_include_files(err.h HAVE_ERR_H)
 if(HAVE_ERR_H)
 	add_definitions(-DHAVE_ERR_H)

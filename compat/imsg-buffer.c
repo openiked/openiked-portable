@@ -954,3 +954,21 @@ msgbuf_drain(struct msgbuf *msgbuf, size_t n)
 		}
 	}
 }
+
+#ifndef HAVE_STRNDUP
+char *
+strndup(const char *str, size_t n)
+{
+	size_t len;
+	char *copy;
+
+	for (len = 0; len < n && str[len]; len++)
+		continue;
+
+	if ((copy = (char *)malloc(len + 1)) == NULL)
+		return (NULL);
+	memcpy(copy, str, len);
+	copy[len] = '\0';
+	return (copy);
+}
+#endif
