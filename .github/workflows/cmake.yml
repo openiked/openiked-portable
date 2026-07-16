@@ -103,62 +103,54 @@ jobs:
   openbsd:
     runs-on: ubuntu-latest
     steps:
-    - name: Bootstrap OpenBSD-latest
-      uses: mario-campos/emulate@v1
+    - uses: actions/checkout@v2
+
+    - name: Build on OpenBSD
+      uses: vmactions/openbsd-vm@v1
       with:
-        operating-system: openbsd-latest
-
-    - name: Install Dependencies
-      run: pkg_add cmake git
-
-    - name: Build
-      run: |
-        git clone --depth=1 https://github.com/openiked/openiked-portable.git
-        cd openiked-portable
-        [ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
-        mkdir build; cd build
-        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-        make
-        cd regress/dh; ./dhtest
-        cd ../parser; ./test_parser
+        usesh: true
+        envs: 'BUILD_TYPE'
+        prepare: pkg_add cmake git
+        run: |
+          mkdir build; cd build
+          cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          make
+          cd regress/dh; ./dhtest
+          cd ../parser; ./test_parser
 
   freebsd:
     runs-on: ubuntu-latest
     steps:
-    - name: Bootstrap FreeBSD-latest
-      uses: mario-campos/emulate@v1
+    - uses: actions/checkout@v2
+
+    - name: Build on FreeBSD
+      uses: vmactions/freebsd-vm@v1
       with:
-        operating-system: freebsd-latest
-
-    - name: Install Dependencies
-      run: pkg install -y cmake libevent git
-
-    - name: Build
-      run: |
-        git clone --depth=1 https://github.com/openiked/openiked-portable.git
-        cd openiked-portable
-        [ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
-        mkdir build; cd build
-        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-        make
-        cd regress/dh; ./dhtest
-        cd ../parser; ./test_parser
+        usesh: true
+        envs: 'BUILD_TYPE'
+        prepare: pkg install -y cmake libevent git
+        run: |
+          mkdir build; cd build
+          cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          make
+          cd regress/dh; ./dhtest
+          cd ../parser; ./test_parser
 
   netbsd:
     runs-on: ubuntu-latest
     steps:
-    - name: Bootstrap NetBSD-latest
-      uses: mario-campos/emulate@v1
-      with:
-        operating-system: netbsd-latest
+    - uses: actions/checkout@v2
 
-    - name: Build
-      run: |
-        git clone --depth=1 https://github.com/openiked/openiked-portable.git
-        cd openiked-portable
-        [ "${{ github.event.pull_request.number }}" = "" ] || (echo "fetching PR ${{ github.event.pull_request.number }}"; git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }} && git checkout "pr-${{ github.event.pull_request.number }}")
-        mkdir build; cd build
-        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-        make
-        cd regress/dh; ./dhtest
-        cd ../parser; ./test_parser
+    - name: Build on NetBSD
+      uses: vmactions/netbsd-vm@v1
+      with:
+        usesh: true
+        envs: 'BUILD_TYPE'
+        prepare: pkgin -y install cmake libevent
+        run: |
+          mkdir build; cd build
+          cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          make
+          cd regress/dh; ./dhtest
+          cd ../parser; ./test_parser
+
