@@ -1,4 +1,4 @@
-/*	$OpenBSD: ikev2.c,v 1.402 2026/06/22 12:51:16 hshoexer Exp $	*/
+/*	$OpenBSD: ikev2.c,v 1.404 2026/09/24 15:52:05 hshoexer Exp $	*/
 
 /*
  * Copyright (c) 2019 Tobias Heider <tobias.heider@stusta.de>
@@ -327,6 +327,8 @@ ikev2_dispatch_cert(int fd, struct privsep_proc *p, struct imsg *imsg)
 	uint8_t			*ptr;
 	size_t			 len;
 	struct iked_id		*id = NULL;
+	struct iked_static_id	 peerid;
+	size_t			 peerlen;
 	int			 ignore = 0;
 	int			 i;
 
@@ -355,6 +357,33 @@ ikev2_dispatch_cert(int fd, struct privsep_proc *p, struct imsg *imsg)
 		    &sh, &type, &ptr, &len)) == NULL ||
 		    sa->sa_state < IKEV2_STATE_EAP)
 			break;
+
+		if (sa->sa_state >= IKEV2_STATE_CLOSING) {
+			log_debug("%s: verdict for a closing SA, ignoring",
+			    __func__);
+			break;
+		}
+		if (len < sizeof(peerid)) {
+			log_debug("%s: verdict without identity", __func__);
+			break;
+		}
+		memcpy(&peerid, ptr, sizeof(peerid));
+		len -= sizeof(peerid);
+		ptr += sizeof(peerid);
+
+		peerlen = ibuf_length(IKESA_DSTID(sa)->id_buf);
+		if (peerid.id_type != IKESA_DSTID(sa)->id_type ||
+		    peerid.id_length != peerlen ||
+		    peerlen > sizeof(peerid.id_data) ||
+		    memcmp(peerid.id_data,
+		    ibuf_data(IKESA_DSTID(sa)->id_buf), peerlen) != 0) {
+			log_info("%s: verdict is for a different identity",
+			    SPI_SA(sa, __func__));
+			ikev2_ike_sa_setreason(sa,
+			    "verdict for a different identity");
+			sa_free(env, sa);
+			break;
+		}
 
 		if (sh.sh_initiator)
 			id = &sa->sa_rcert;
@@ -972,6 +1001,17 @@ ikev2_ike_auth_recv(struct iked *env, struct iked_sa *sa,
 		id = &sa->sa_rid;
 	else
 		id = &sa->sa_iid;
+
+	/* peer's identity is fixed for the life of the SA */
+	if (id->id_type && msg->msg_peerid.id_type &&
+	    (id->id_type != msg->msg_peerid.id_type ||
+	    ibuf_length(id->id_buf) != ibuf_length(msg->msg_peerid.id_buf) ||
+	    memcmp(ibuf_data(id->id_buf), ibuf_data(msg->msg_peerid.id_buf),
+	    ibuf_length(id->id_buf)) != 0)) {
+		log_info("%s: peer changed its identity", SPI_SA(sa, __func__));
+		ikev2_send_auth_failed(env, sa);
+		return (-1);
+	}
 
 	/* try to relookup the policy based on the peerid */
 	if (msg->msg_peerid.id_type && !sa->sa_hdr.sh_initiator) {
@@ -3096,7 +3136,7 @@ ikev2_handle_delete(struct iked *env, struct iked_message *msg,
 	FILE			*spif;
 	char			*spibuf = NULL;
 	uint64_t		*localspi = NULL;
-	uint64_t		 spi64, spi = 0;
+	uint64_t		 spi = 0;
 	uint32_t		 spi32;
 	uint8_t			*buf;
 	size_t			 found = 0;
@@ -3115,7 +3155,6 @@ ikev2_handle_delete(struct iked *env, struct iked_message *msg,
 
 	switch (sz) {
 	case 4:
-	case 8:
 		break;
 	case 0:
 		if (msg->msg_del_protoid != IKEV2_SAPROTO_IKE) {
@@ -3127,6 +3166,11 @@ ikev2_handle_delete(struct iked *env, struct iked_message *msg,
 		goto done;
 	default:
 		log_info("%s: error: invalid SPI size", __func__);
+		goto done;
+	}
+
+	if (msg->msg_del_buf == NULL) {
+		log_debug("%s: invalid delete payload", __func__);
 		goto done;
 	}
 
@@ -3147,16 +3191,8 @@ ikev2_handle_delete(struct iked *env, struct iked_message *msg,
 
 	buf = ibuf_data(msg->msg_del_buf);
 	for (i = 0; i < cnt; i++) {
-		switch (sz) {
-		case 4:
-			memcpy(&spi32, buf + (i * sz), sizeof(spi32));
-			spi = betoh32(spi32);
-			break;
-		case 8:
-			memcpy(&spi64, buf + (i * sz), sizeof(spi64));
-			spi = betoh64(spi64);
-			break;
-		}
+		memcpy(&spi32, buf + (i * sz), sizeof(spi32));
+		spi = betoh32(spi32);
 
 		log_debug("%s: spi %s", __func__, print_spi(spi, sz));
 
@@ -3208,20 +3244,11 @@ ikev2_handle_delete(struct iked *env, struct iked_message *msg,
 		for (i = 0; i < cnt; i++) {
 			if (localspi[i] == 0)	/* happens if found < cnt */
 				continue;
-			switch (sz) {
-			case 4:
-				spi32 = htobe32(localspi[i]);
-				if (ibuf_add(resp, &spi32, sizeof(spi32)) != 0)
-					goto done;
-				ret += sizeof(spi32);
-				break;
-			case 8:
-				spi64 = htobe64(localspi[i]);
-				if (ibuf_add(resp, &spi64, sizeof(spi64)) != 0)
-					goto done;
-				ret += sizeof(spi64);
-				break;
-			}
+
+			spi32 = htobe32(localspi[i]);
+			if (ibuf_add(resp, &spi32, sizeof(spi32)) != 0)
+				goto done;
+			ret += sizeof(spi32);
 		}
 		fflush(spif);
 		if (!ferror(spif)) {
@@ -3834,6 +3861,12 @@ ikev2_resp_ike_eap_mschap(struct iked *env, struct iked_sa *sa,
 		eap->eam_identity = NULL;
 		return (eap_challenge_request(env, sa, eap->eam_id));
 	case EAP_STATE_MSCHAPV2_CHALLENGE:
+		if (sa->sa_eap.id_buf == NULL ||
+		    ibuf_size(sa->sa_eap.id_buf) != MSCHAPV2_CHALLENGE_SZ) {
+			log_info("%s: invalid EAP challenge",
+			    SPI_SA(sa, __func__));
+			return (-1);
+		}
 		if (eap->eam_user) {
 			name = eap->eam_user;
 		} else if (sa->sa_eapid) {
