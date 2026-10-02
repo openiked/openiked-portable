@@ -64,7 +64,8 @@ main(void)
 	for (id = 0; id < 0xffff; id++) {
 		if (((group = group_get(id)) == NULL ||
 		    (group2 = group_get(id)) == NULL) ||
-		    group->spec->type == GROUP_SNTRUP761X25519)
+		    group->spec->type == GROUP_SNTRUP761X25519 ||
+		    group->spec->type == GROUP_MLKEM768X25519)
 			continue;
 
 		dh_create_exchange(group, &buf, NULL);
