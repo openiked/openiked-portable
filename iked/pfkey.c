@@ -138,8 +138,11 @@ int	pfkey_write(struct iked *, struct sadb_msg *, struct iovec *, int,
 	    uint8_t **, ssize_t *);
 int	pfkey_reply(int, uint8_t **, ssize_t *);
 void	pfkey_dispatch(int, short, void *);
-int	pfkey_sa_lookup(struct iked *, struct iked_childsa *, uint64_t *);
+int	pfkey_sa_lookup(struct iked *, struct iked_childsa *, uint64_t *,
+	    struct iked_sastats *);
 int	pfkey_sa_check_exists(struct iked *, struct iked_childsa *);
+int	pfkey_sa_sastats(struct iked *, struct iked_childsa *,
+	    struct iked_sastats *);
 
 struct sadb_ident *
 	pfkey_id2ident(struct iked_id *, unsigned int);
@@ -1239,7 +1242,8 @@ pfkey_sa(struct iked *env, uint8_t satype, uint8_t action, struct iked_childsa *
 }
 
 int
-pfkey_sa_lookup(struct iked *env, struct iked_childsa *sa, uint64_t *last_used)
+pfkey_sa_lookup(struct iked *env, struct iked_childsa *sa, uint64_t *last_used,
+    struct iked_sastats *stats)
 {
 	struct sadb_msg		*msg, smsg;
 	struct sadb_address	 sa_src, sa_dst;
@@ -1252,6 +1256,7 @@ pfkey_sa_lookup(struct iked *env, struct iked_childsa *sa, uint64_t *last_used)
 #ifdef SADB_X_EXT_LIFETIME_LASTUSE
 	struct sadb_lifetime	*sa_life;
 #endif
+	struct sadb_x_counter	*sa_counter;
 	struct sockaddr_storage	 ssrc, sdst;
 	struct iovec		 iov[IOV_CNT];
 	uint64_t		 pad = 0;
@@ -1392,6 +1397,20 @@ pfkey_sa_lookup(struct iked *env, struct iked_childsa *sa, uint64_t *last_used)
 		log_debug("%s: last_used %llu", __func__, *last_used);
 	}
 #endif
+	if (stats) {
+		if ((sa_counter = pfkey_find_ext(data, n,
+		    SADB_X_EXT_COUNTER)) == NULL) {
+			/* has never been used */
+			ret = -1;
+			goto done;
+		}
+		stats->sas_ibytes = sa_counter->sadb_x_counter_ibytes;
+		stats->sas_obytes = sa_counter->sadb_x_counter_obytes;
+		stats->sas_ipackets = sa_counter->sadb_x_counter_ipackets;
+		stats->sas_opackets = sa_counter->sadb_x_counter_opackets;
+		stats->sas_idrops = sa_counter->sadb_x_counter_idrops;
+		stats->sas_odrops = sa_counter->sadb_x_counter_odrops;
+	}
 
 #undef PAD
 done:
@@ -1402,13 +1421,20 @@ done:
 int
 pfkey_sa_last_used(struct iked *env, struct iked_childsa *sa, uint64_t *last_used)
 {
-	return pfkey_sa_lookup(env, sa, last_used);
+	return pfkey_sa_lookup(env, sa, last_used, NULL);
 }
 
 int
 pfkey_sa_check_exists(struct iked *env, struct iked_childsa *sa)
 {
-	return pfkey_sa_lookup(env, sa, NULL);
+	return pfkey_sa_lookup(env, sa, NULL, NULL);
+}
+
+int
+pfkey_sa_sastats(struct iked *env, struct iked_childsa *sa,
+    struct iked_sastats *stats)
+{
+	return pfkey_sa_lookup(env, sa, NULL, stats);
 }
 
 int
@@ -1974,7 +2000,8 @@ pfkey_sa_update_addresses(struct iked *env, struct iked_childsa *sa)
 int
 pfkey_sa_delete(struct iked *env, struct iked_childsa *sa)
 {
-	uint8_t		satype;
+	uint8_t			satype;
+	struct iked_sastats	sas;
 
 	if (!sa->csa_loaded || sa->csa_spi.spi == 0)
 		return (0);
@@ -1982,11 +2009,23 @@ pfkey_sa_delete(struct iked *env, struct iked_childsa *sa)
 	if (pfkey_map(pfkey_satype, sa->csa_saproto, &satype) == -1)
 		return (-1);
 
+	/* preserve the statistics */
+	memset(&sas, 0, sizeof(sas));
+	pfkey_sa_sastats(env, sa, &sas);
+
 	if (pfkey_sa(env, satype, SADB_DELETE, sa) == -1 &&
 	    pfkey_sa_check_exists(env, sa) == 0)
 		return (-1);
 
 	sa->csa_loaded = 0;
+
+	sa->csa_ikesa->sa_stats.sas_ipackets += sas.sas_ipackets;
+	sa->csa_ikesa->sa_stats.sas_opackets += sas.sas_opackets;
+	sa->csa_ikesa->sa_stats.sas_ibytes += sas.sas_ibytes;
+	sa->csa_ikesa->sa_stats.sas_obytes += sas.sas_obytes;
+	sa->csa_ikesa->sa_stats.sas_idrops += sas.sas_idrops;
+	sa->csa_ikesa->sa_stats.sas_odrops += sas.sas_odrops;
+
 	return (0);
 }
 

@@ -35,6 +35,18 @@ void explicit_bzero(void *, size_t);
 int getpagesize(void);
 #endif
 
+#if !defined(HAVE_TIMESPECSUB)
+#define	timespecsub(tsp, usp, vsp)					\
+	do {								\
+		(vsp)->tv_sec = (tsp)->tv_sec - (usp)->tv_sec;		\
+		(vsp)->tv_nsec = (tsp)->tv_nsec - (usp)->tv_nsec;	\
+		if ((vsp)->tv_nsec < 0) {				\
+			(vsp)->tv_sec--;				\
+			(vsp)->tv_nsec += 1000000000L;			\
+		}							\
+	} while (0)
+#endif
+
 #if !defined(HAVE_TIMINGSAFE_BCMP)
 int timingsafe_bcmp(const void *, const void *, size_t);
 #endif
@@ -179,6 +191,23 @@ typedef int evutil_socket_t;
 #endif
 #if !defined(SADB_X_FLOW_TYPE_DENY)
 #define SADB_X_FLOW_TYPE_DENY	1
+#endif
+#if !defined(SADB_X_EXT_COUNTER)
+#define SADB_X_EXT_COUNTER	36
+
+struct sadb_x_counter {
+	uint16_t  sadb_x_counter_len;
+	uint16_t  sadb_x_counter_exttype;
+	uint32_t  sadb_x_counter_pad;
+	uint64_t  sadb_x_counter_ipackets;	/* Input IPsec packets */
+	uint64_t  sadb_x_counter_opackets;	/* Output IPsec packets */
+	uint64_t  sadb_x_counter_ibytes;	/* Input bytes */
+	uint64_t  sadb_x_counter_obytes;	/* Output bytes */
+	uint64_t  sadb_x_counter_idrops;	/* Dropped on input */
+	uint64_t  sadb_x_counter_odrops;	/* Dropped on output */
+	uint64_t  sadb_x_counter_idecompbytes;	/* Input bytes, decompressed */
+	uint64_t  sadb_x_counter_ouncompbytes;	/* Output bytes, uncompressed */
+};
 #endif
 
 #if defined(HAVE_LINUX_PFKEY_H)

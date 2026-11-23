@@ -331,11 +331,6 @@ if(HAVE_VIS)
 	add_definitions(-DHAVE_VIS)
 endif()
 
-check_symbol_exists(timespecsub sys/time.h HAVE_TIMESPECSUB)
-if(HAVE_TIMESPECSUB)
-	add_definitions(-DHAVE_TIMESPECSUB)
-endif()
-
 check_function_exists(timingsafe_bcmp HAVE_TIMINGSAFE_BCMP)
 if(HAVE_TIMINGSAFE_BCMP)
 	add_definitions(-DHAVE_TIMINGSAFE_BCMP)

@@ -2131,6 +2131,15 @@ ikev2_pld_eap(struct iked *env, struct ikev2_payload *pld,
 
 		if (eap_parse(env, sa, msg, eap, msg->msg_response) == -1)
 			return (-1);
+		if (msg->msg_parent->msg_eapmsg != NULL) {
+			log_info("%s: duplicate EAP in payload", __func__);
+			return (-1);
+		}
+		if ((msg->msg_parent->msg_eapmsg = ibuf_new(eap, eap_len))
+		    == NULL) {
+			log_debug("%s: failed to save eap", __func__);
+			return (-1);
+		}
 		msg->msg_parent->msg_eap.eam_found = 1;
 	}
 

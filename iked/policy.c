@@ -60,6 +60,11 @@ policy_init(struct iked *env)
 {
 	TAILQ_INIT(&env->sc_policies);
 	TAILQ_INIT(&env->sc_ocsp);
+	TAILQ_INIT(&env->sc_radauthservers);
+	TAILQ_INIT(&env->sc_radacctservers);
+	TAILQ_INIT(&env->sc_radcfgmaps);
+	TAILQ_INIT(&env->sc_raddaes);
+	TAILQ_INIT(&env->sc_raddaeclients);
 	RB_INIT(&env->sc_users);
 	RB_INIT(&env->sc_sas);
 	RB_INIT(&env->sc_dstid_sas);
