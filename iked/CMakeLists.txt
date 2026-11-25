@@ -93,6 +93,7 @@ list(APPEND SRCS
 	policy.c
 	print.c
 	proc.c
+	radius.c
 	smult_curve25519_ref.c
 	timer.c
 	crypto_hash.c
@@ -112,7 +113,7 @@ endif()
 target_include_directories(iked PRIVATE ${INC_DIRS})
 target_include_directories(iked-shared PRIVATE ${INC_DIRS})
 
-target_link_libraries(iked-shared PRIVATE compat)
+target_link_libraries(iked-shared PRIVATE compat radius)
 
 list(APPEND LIBS
 	util
@@ -120,6 +121,7 @@ list(APPEND LIBS
 	crypto
 	ssl
 	compat
+	radius
 	iked-shared
 )
 

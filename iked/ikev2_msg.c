@@ -203,6 +203,7 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 		ibuf_free(msg->msg_cookie);
 		ibuf_free(msg->msg_cookie2);
 		ibuf_free(msg->msg_del_buf);
+		ibuf_free(msg->msg_eapmsg);
 		free(msg->msg_eap.eam_identity);
 		free(msg->msg_eap.eam_user);
 		free(msg->msg_cp_addr);
@@ -220,6 +221,7 @@ ikev2_msg_cleanup(struct iked *env, struct iked_message *msg)
 		msg->msg_cookie = NULL;
 		msg->msg_cookie2 = NULL;
 		msg->msg_del_buf = NULL;
+		msg->msg_eapmsg = NULL;
 		msg->msg_eap.eam_user = NULL;
 		msg->msg_cp_addr = NULL;
 		msg->msg_cp_addr6 = NULL;

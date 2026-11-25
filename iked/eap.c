@@ -583,9 +583,12 @@ eap_parse(struct iked *env, const struct iked_sa *sa, struct iked_message *msg,
 
 		return (eap_mschap(env, sa, msg, eap));
 	default:
-		log_debug("%s: unsupported EAP type %s", __func__,
-		    print_map(eap->eap_type, eap_type_map));
-		return (-1);
+		if (sa->sa_policy->pol_auth.auth_eap != EAP_TYPE_RADIUS) {
+			log_debug("%s: unsupported EAP type %s", __func__,
+			    print_map(eap->eap_type, eap_type_map));
+			return (-1);
+		} /* else, when RADIUS, pass it to the client */
+		break;
 	}
 
 	return (0);

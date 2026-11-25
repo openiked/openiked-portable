@@ -107,3 +107,7 @@ else()
 	add_library(compat INTERFACE)
 	target_include_directories(compat INTERFACE .)
 endif()
+
+if(NOT HAVE_LIBRADIUS)
+	add_subdirectory(libradius)
+endif()
