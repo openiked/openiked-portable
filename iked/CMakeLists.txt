@@ -97,6 +97,7 @@ list(APPEND SRCS
 	timer.c
 	crypto_hash.c
 	sntrup761.c
+	libcrux_mlkem768_sha3.c
 	# Generated files
 	${CMAKE_CURRENT_BINARY_DIR}/parse.c
 )

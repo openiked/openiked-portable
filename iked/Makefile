@@ -6,7 +6,7 @@ SRCS=		ca.c chap_ms.c config.c control.c crypto.c dh.c \
 		log.c ocsp.c pfkey.c policy.c print.c proc.c timer.c util.c \
 		imsg_util.c smult_curve25519_ref.c vroute.c
 SRCS+=		eap_map.c ikev2_map.c
-SRCS+=		crypto_hash.c sntrup761.c
+SRCS+=		crypto_hash.c sntrup761.c libcrux_mlkem768_sha3.c
 SRCS+=		parse.y
 SRCS+=		ipsec.c
 MAN=		iked.conf.5 iked.8
